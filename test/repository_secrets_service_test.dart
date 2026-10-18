@@ -26,6 +26,23 @@ BASE64_COM_DOIS_PONTOS: QUJDRA==
       expect(values['BASE64_COM_DOIS_PONTOS'], 'QUJDRA==');
     });
 
+    test('aceita nomes .env ocultos e variantes do Android', () {
+      expect(RepositorySecretsService.isSupportedImportFileName('.env'), isTrue);
+      expect(RepositorySecretsService.isSupportedImportFileName('.ENV'), isTrue);
+      expect(RepositorySecretsService.isSupportedImportFileName('.env.local'), isTrue);
+      expect(RepositorySecretsService.isSupportedImportFileName('release.ENV'), isTrue);
+      expect(RepositorySecretsService.isSupportedImportFileName('secrets.txt'), isTrue);
+      expect(RepositorySecretsService.isSupportedImportFileName('foto.jpg'), isFalse);
+    });
+
+    test('aceita UTF-8 BOM, CRLF e export com tabulação', () {
+      final values = RepositorySecretsService.parseText(
+        '\uFEFF# comentario\r\nexport\tKEY_ALIAS=teste\r\nKEY_PASSWORD="abc#123"\r\n',
+      );
+      expect(values['KEY_ALIAS'], 'teste');
+      expect(values['KEY_PASSWORD'], 'abc#123');
+    });
+
     test('detecta duplicidade após normalização', () {
       expect(
         () => RepositorySecretsService.parseText(
@@ -184,6 +201,44 @@ BASE64_COM_DOIS_PONTOS: QUJDRA==
       expect(base64.decode(payload['encrypted_value']! as String), isNotEmpty);
     });
 
+    test('exclui em lote, remove duplicados e reporta falhas individuais', () async {
+      final gateway = _FakeGateway(failDeleteNames: const {'FALHA'});
+      final service = RepositorySecretsService.withGateway(gateway);
+      final progress = <int>[];
+      final result = await service.deleteMany(
+        repositoryFullName: 'owner/repo',
+        names: const ['UM', 'FALHA', 'um', 'DOIS'],
+        onProgress: (completed, _) => progress.add(completed),
+      );
+      expect(result.total, 3);
+      expect(result.deleted, 2);
+      expect(result.failed, 1);
+      expect(result.allSucceeded, isFalse);
+      expect(progress, [1, 2, 3]);
+      expect(gateway.deletedPaths, [
+        '/repos/owner/repo/actions/secrets/UM',
+        '/repos/owner/repo/actions/secrets/FALHA',
+        '/repos/owner/repo/actions/secrets/DOIS',
+      ]);
+      final diagnostic = result.diagnosticText(repositoryFullName: 'owner/repo');
+      expect(diagnostic, contains('FALHA'));
+      expect(diagnostic, contains('HTTP 403'));
+      expect(diagnostic, isNot(contains('encrypted_value')));
+    });
+
+    test('não inicia exclusão com nomes inválidos', () async {
+      final gateway = _FakeGateway();
+      final service = RepositorySecretsService.withGateway(gateway);
+      await expectLater(
+        service.deleteMany(
+          repositoryFullName: 'owner/repo',
+          names: const ['VALIDO', 'GITHUB_TOKEN'],
+        ),
+        throwsA(isA<FormatException>()),
+      );
+      expect(gateway.deletedPaths, isEmpty);
+    });
+
     test('exclusão usa somente o nome, sem valor', () async {
       final gateway = _FakeGateway();
       final service = RepositorySecretsService.withGateway(gateway);
@@ -208,10 +263,12 @@ class _FakeGateway implements RepositorySecretsGateway {
   _FakeGateway({
     this.existingNames = const [],
     this.failNames = const {},
+    this.failDeleteNames = const {},
   });
 
   final List<String> existingNames;
   final Set<String> failNames;
+  final Set<String> failDeleteNames;
   final List<_PutCall> puts = [];
   final List<String> deletedPaths = [];
 
@@ -258,5 +315,12 @@ class _FakeGateway implements RepositorySecretsGateway {
   @override
   Future<void> delete(String path) async {
     deletedPaths.add(path);
+    if (failDeleteNames.contains(Uri.decodeComponent(path.split('/').last))) {
+      throw GitHubPermissionException(
+        httpStatus: 403,
+        endpoint: path,
+        apiMessage: 'Resource not accessible by personal access token',
+      );
+    }
   }
 }

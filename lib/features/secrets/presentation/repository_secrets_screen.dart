@@ -195,74 +195,110 @@ class _RepositorySecretsScreenState extends ConsumerState<RepositorySecretsScree
                   );
                 }
 
-                return ListView.separated(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(10, 3, 10, 88),
-                  itemCount: items.length,
-                  separatorBuilder: (_, _) =>
-                      const SizedBox(height: 3),
-                  itemBuilder: (context, index) {
-                    final secret = items[index];
-                    return Material(
-                      color: scheme.surfaceContainerLow,
-                      borderRadius: BorderRadius.circular(4),
-                      clipBehavior: Clip.antiAlias,
-                      child: ListTile(
-                        dense: true,
-                        visualDensity: const VisualDensity(vertical: -2),
-                        contentPadding:
-                            const EdgeInsets.fromLTRB(10, 1, 2, 1),
-                        leading: Container(
-                          width: 34,
-                          height: 34,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: scheme.primaryContainer
-                                .withValues(alpha: .5),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Icon(
-                            Icons.key_rounded,
-                            size: 18,
-                            color: scheme.primary,
-                          ),
-                        ),
-                        title: Text(
-                          secret.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        subtitle: Text(
-                          'Atualizado ${_formatDate(secret.updatedAt)}',
-                          maxLines: 1,
-                          style: Theme.of(context).textTheme.labelSmall,
-                        ),
-                        trailing: PopupMenuButton<String>(
-                          tooltip: 'Ações',
-                          onSelected: (action) {
-                            if (action == 'replace') {
-                              _replace(secret);
-                            } else if (action == 'delete') {
-                              _delete(secret);
-                            }
-                          },
-                          itemBuilder: (_) => const [
-                            PopupMenuItem(
-                              value: 'replace',
-                              child: Text('Substituir valor'),
+                return Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 4, 12, 6),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              '${items.length} Secrets no repositório',
+                              style: Theme.of(context).textTheme.labelMedium,
                             ),
-                            PopupMenuItem(
-                              value: 'delete',
-                              child: Text('Excluir'),
-                            ),
-                          ],
+                          ),
+                          TextButton.icon(
+                            onPressed: _working ? null : _deleteAllSecrets,
+                            icon: const Icon(Icons.delete_sweep_outlined, size: 18),
+                            label: const Text('Excluir todas'),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (_deletingTotal > 0) ...[
+                      LinearProgressIndicator(
+                        value: _deletingCompleted / _deletingTotal,
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(6),
+                        child: Text(
+                          'Excluindo $_deletingCompleted de $_deletingTotal Secrets',
                         ),
                       ),
-                    );
-                  },
+                    ],
+                    Expanded(
+                      child: ListView.separated(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(10, 3, 10, 88),
+                        itemCount: items.length,
+                        separatorBuilder: (_, _) =>
+                            const SizedBox(height: 3),
+                        itemBuilder: (context, index) {
+                          final secret = items[index];
+                          return Material(
+                            color: scheme.surfaceContainerLow,
+                            borderRadius: BorderRadius.circular(4),
+                            clipBehavior: Clip.antiAlias,
+                            child: ListTile(
+                              dense: true,
+                              visualDensity: const VisualDensity(vertical: -2),
+                              contentPadding:
+                                  const EdgeInsets.fromLTRB(10, 1, 2, 1),
+                              leading: Container(
+                                width: 34,
+                                height: 34,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: scheme.primaryContainer
+                                      .withValues(alpha: .5),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Icon(
+                                  Icons.key_rounded,
+                                  size: 18,
+                                  color: scheme.primary,
+                                ),
+                              ),
+                              title: Text(
+                                secret.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              subtitle: Text(
+                                'Atualizado ${_formatDate(secret.updatedAt)}',
+                                maxLines: 1,
+                                style: Theme.of(context).textTheme.labelSmall,
+                              ),
+                              trailing: PopupMenuButton<String>(
+                                enabled: !_working,
+                                tooltip: 'Ações',
+                                onSelected: (action) {
+                                  if (action == 'replace') {
+                                    _replace(secret);
+                                  } else if (action == 'delete') {
+                                    _delete(secret);
+                                  }
+                                },
+                                itemBuilder: (_) => const [
+                                  PopupMenuItem(
+                                    value: 'replace',
+                                    child: Text('Substituir valor'),
+                                  ),
+                                  PopupMenuItem(
+                                    value: 'delete',
+                                    child: Text('Excluir'),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 );
               },
             ),

@@ -212,12 +212,59 @@ class RepositorySecretsService {
         '/repos/$repositoryFullName/actions/secrets/${Uri.encodeComponent(name)}',
       );
 
+  /// Exclui somente os nomes aprovados pelo usuário, um de cada vez.
+  /// Nenhuma falha individual cancela o restante do lote.
+  Future<SecretDeletionResult> deleteMany({
+    required String repositoryFullName,
+    required List<String> names,
+    void Function(int completed, int total)? onProgress,
+  }) async {
+    final unique = <String>{};
+    for (final raw in names) {
+      unique.add(_normalizeName(raw));
+    }
+    final results = <SecretDeletionItemResult>[];
+    for (final name in unique) {
+      try {
+        await deleteSecret(repositoryFullName: repositoryFullName, name: name);
+        results.add(SecretDeletionItemResult(name: name, success: true));
+      } catch (error) {
+        results.add(SecretDeletionItemResult(
+          name: name,
+          success: false,
+          message: error is AppException
+              ? error.message
+              : 'Falha ao excluir este Secret.',
+          httpStatus: error is AppException ? error.httpStatus : null,
+        ));
+      }
+      onProgress?.call(results.length, unique.length);
+    }
+    return SecretDeletionResult(items: results);
+  }
+
+  // O seletor Android pode ocultar `.env` (arquivo sem nome-base) quando
+  // usa filtros por extensão. Abrimos o SAF sem filtro e validamos localmente.
   Future<PlatformFile?> pickImportFile() => FilePicker.pickFile(
-        type: FileType.custom,
-        allowedExtensions: const ['txt', 'env', 'json', 'xml'],
+        type: FileType.any,
       );
 
+  static bool isSupportedImportFileName(String fileName) {
+    final name = fileName.trim().toLowerCase();
+    return name == '.env' ||
+        name.startsWith('.env.') ||
+        name.endsWith('.env') ||
+        name.endsWith('.txt') ||
+        name.endsWith('.json') ||
+        name.endsWith('.xml');
+  }
+
   Future<Map<String, String>> parseImportFile(PlatformFile file) async {
+    if (!isSupportedImportFileName(file.name)) {
+      throw const FormatException(
+        'Formato não suportado. Selecione .env, .env.local, .txt, .json ou .xml.',
+      );
+    }
     final fileLength = await file.length();
     if (fileLength > maxImportFileBytes) {
       throw FormatException(
@@ -229,7 +276,9 @@ class RepositorySecretsService {
     if (bytes.length > maxImportFileBytes) {
       throw const FormatException('O arquivo de Secrets excede o limite seguro de importação.');
     }
-    final text = utf8.decode(bytes, allowMalformed: false);
+    // UTF-8 com BOM aparece em .env exportados por editores Windows.
+    final decoded = utf8.decode(bytes, allowMalformed: false);
+    final text = decoded.startsWith('\uFEFF') ? decoded.substring(1) : decoded;
     final lower = file.name.toLowerCase();
     if (lower.endsWith('.json')) return parseJson(text);
     if (lower.endsWith('.xml')) return parseXml(text);
@@ -242,10 +291,10 @@ class RepositorySecretsService {
     final lines = const LineSplitter().convert(text);
     for (var index = 0; index < lines.length; index++) {
       final rawLine = lines[index];
-      final line = rawLine.trim();
+      final line = rawLine.replaceFirst('\uFEFF', '').trim();
       if (line.isEmpty || line.startsWith('#') || line.startsWith('//')) continue;
 
-      final normalizedLine = line.startsWith('export ') ? line.substring(7).trim() : line;
+      final normalizedLine = line.replaceFirst(RegExp(r'^export\s+'), '');
       final equal = normalizedLine.indexOf('=');
       final colon = normalizedLine.indexOf(':');
       final candidates = <int>[equal, colon].where((index) => index > 0).toList();

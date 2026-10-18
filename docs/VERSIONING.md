@@ -1,3 +1,7 @@
+### 2.0.132
+
+A versão `version: 2.0.132+200146` melhora a seleção/importação de `.env` e variantes na tela Secrets, oferece exclusão em lote apenas após confirmação digitada, processamento individual, progresso e resultado copiável sem valores. Consulte `docs/RELEASE_2.0.132.md`.
+
 ### 2.0.131
 
 A versão `version: 2.0.131+200145` adiciona a configuração persistente de limpeza automática de downloads por projeto (após conclusão, antes de iniciar, desligada), excluindo apenas arquivos finais gerenciados na pasta exata e preservando parciais, pausados e outros documentos. Veja `docs/RELEASE_2.0.131.md`.

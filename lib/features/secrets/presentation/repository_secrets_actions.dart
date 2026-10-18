@@ -441,6 +441,214 @@ mixin _RepositorySecretsActions on ConsumerState<RepositorySecretsScreen> {
     );
   }
 
+  int _deletingCompleted = 0;
+  int _deletingTotal = 0;
+
+  Future<void> _deleteAllSecrets() async {
+    if (_working) return;
+    final allowed = await ensureRepositoryPermission(
+      context,
+      ref,
+      repositoryFullName: widget.repositoryFullName,
+      action: RepositoryCriticalAction.manageSecrets,
+    );
+    if (!allowed || !mounted) return;
+
+    // A lista é obtida novamente do GitHub. O lote usa somente estes nomes,
+    // nunca um conjunto alterado silenciosamente depois da confirmação.
+    final List<RepositorySecret> current;
+    setState(() => _working = true);
+    try {
+      current = await ref.read(repositorySecretsServiceProvider).listSecrets(
+            widget.repositoryFullName,
+          );
+    } catch (error) {
+      if (mounted) _showError(error);
+      if (mounted) setState(() => _working = false);
+      return;
+    }
+    if (mounted) setState(() => _working = false);
+    if (!mounted) return;
+    if (current.isEmpty) {
+      showCenteredNotice(context, 'Este repositório não possui Secrets para excluir.');
+      await _refresh();
+      return;
+    }
+
+    final confirmation = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Excluir todos os Secrets?'),
+          content: AdaptiveDialogBody(
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Repositório: ${widget.repositoryFullName}\n'
+                    '${current.length} Secrets serão excluídos permanentemente.',
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    'Esta ação não pode ser desfeita. O GitHub não permite '
+                    'recuperar valores de Secrets excluídos. Outros repositórios '
+                    'não serão alterados.',
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    current.map((item) => item.name).join(' • '),
+                    maxLines: 5,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: confirmation,
+                    autocorrect: false,
+                    enableSuggestions: false,
+                    textCapitalization: TextCapitalization.characters,
+                    onChanged: (_) => setDialogState(() {}),
+                    decoration: const InputDecoration(
+                      labelText: 'Digite EXCLUIR para confirmar',
+                      hintText: 'EXCLUIR',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton.icon(
+              onPressed: confirmation.text.trim() == 'EXCLUIR'
+                  ? () => Navigator.pop(dialogContext, true)
+                  : null,
+              icon: const Icon(Icons.delete_forever_outlined),
+              label: Text('Excluir ${current.length} Secrets'),
+            ),
+          ],
+        ),
+      ),
+    );
+    confirmation.dispose();
+    if (confirmed != true || !mounted) return;
+
+    setState(() {
+      _working = true;
+      _deletingCompleted = 0;
+      _deletingTotal = current.length;
+    });
+    SecretDeletionResult? result;
+    try {
+      result = await ref.read(repositorySecretsServiceProvider).deleteMany(
+            repositoryFullName: widget.repositoryFullName,
+            names: current.map((secret) => secret.name).toList(growable: false),
+            onProgress: (completed, total) {
+              if (mounted) {
+                setState(() {
+                  _deletingCompleted = completed;
+                  _deletingTotal = total;
+                });
+              }
+            },
+          );
+    } catch (error) {
+      if (mounted) _showError(error);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _working = false;
+          _deletingCompleted = 0;
+          _deletingTotal = 0;
+        });
+        // Invalida o cache mesmo em falha parcial.
+        ref.invalidate(repositorySecretsProvider(widget.repositoryFullName));
+      }
+    }
+    if (!mounted || result == null) return;
+    await _showDeleteManyResult(result);
+  }
+
+  Future<void> _showDeleteManyResult(SecretDeletionResult result) async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(result.allSucceeded
+            ? 'Secrets excluídos'
+            : result.deleted > 0
+                ? 'Exclusão parcial'
+                : 'Exclusão não concluída'),
+        content: AdaptiveDialogBody(
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${result.deleted} excluídos • ${result.failed} falharam • ${result.total} analisados',
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 9),
+                const Text('Valores dos Secrets nunca são consultados.'),
+                const SizedBox(height: 10),
+                ...result.items.map((item) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 3),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            item.success
+                                ? Icons.check_circle_outline_rounded
+                                : Icons.error_outline_rounded,
+                            size: 18,
+                            color: item.success
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context).colorScheme.error,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(item.success
+                                ? item.name
+                                : '${item.name}: ${item.message ?? 'Falha'}${item.httpStatus == null ? '' : ' • HTTP ${item.httpStatus}'}'),
+                          ),
+                        ],
+                      ),
+                    )),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton.icon(
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(
+                text: result.diagnosticText(
+                  repositoryFullName: widget.repositoryFullName,
+                ),
+              ));
+              if (dialogContext.mounted) {
+                showCenteredNotice(dialogContext, 'Resultado copiado.');
+              }
+            },
+            icon: const Icon(Icons.copy_rounded),
+            label: const Text('Copiar resultado'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Fechar'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _replace(RepositorySecret secret) async {
     final allowed = await ensureRepositoryPermission(
       context,

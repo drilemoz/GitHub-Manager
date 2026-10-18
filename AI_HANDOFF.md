@@ -1,3 +1,10 @@
+# GitHub Manager 2.0.132+200146
+
+- Base 2.0.131+200145. Módulo Secrets: `pickImportFile` usa `FileType.any` devido a arquivos ocultos `.env` que não aparecem com filtro Android; `parseImportFile` aplica whitelist de nomes/extensões e decodificação UTF-8/BOM. O formato continua sem multilinhas literais.
+- `RepositorySecretsService.deleteMany` envia DELETE individual por nome para a API GitHub, com progresso, deduplicação e resultados por item; `SecretDeletionResult` não expõe conteúdo.
+- UI `RepositorySecretsScreen` apresenta Excluir todas quando há itens; consulta lista atualizada, requer permissão, confirma com digitação de EXCLUIR, mostra progresso e resultado com cópia segura. Delete é irreversível e restrito ao repositório.
+- Testes: `test/repository_secrets_service_test.dart`, `test/secrets_bulk_delete_ui_contract_test.dart`. Executar `flutter analyze`, `flutter test` e workflow Android APK. Sem SDK Dart/Flutter local.
+
 # GitHub Manager 2.0.131+200145
 
 - Preferência `settings.download_cleanup_mode` em SQLite com opções `afterSuccess`, `beforeStart` e `disabled`, padrão `afterSuccess`.

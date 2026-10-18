@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class UpdateWhatsNewScreen extends StatelessWidget {
-  static const releaseNotesVersion = '2.0.131';
+  static const releaseNotesVersion = '2.0.132';
 
   const UpdateWhatsNewScreen({
     required this.versionLabel,
@@ -70,20 +70,20 @@ class UpdateWhatsNewScreen extends StatelessWidget {
                     const SizedBox(height: 24),
                     const _UpdateItem(
                       icon: Icons.pause_circle_outline_rounded,
-                      title: 'Limpeza automática por projeto',
-                      description: 'Escolha em Configurações: após concluir (padrão), antes de começar ou desativada. Cada pasta mantém apenas o arquivo final mais recente do gerenciador.',
+                      title: 'Importação de Secrets .env',
+                      description: 'Importe arquivos .env, .env.local, TXT, JSON ou XML, mesmo que o Android oculte arquivos iniciados por ponto. O app valida o conteúdo antes de salvar.',
                     ),
                     const SizedBox(height: 12),
                     const _UpdateItem(
                       icon: Icons.speed_rounded,
-                      title: 'Proteção de downloads e arquivos pessoais',
-                      description: 'A limpeza fica limitada aos arquivos finais da pasta do projeto que pertencem ao app, preservando downloads parciais e pausados.',
+                      title: 'Excluir todos os Secrets',
+                      description: 'Nova ação com confirmação digitada, contagem, progresso, resultado individual e opção de copiar relatório, sem revelar valores secretos.',
                     ),
                     const SizedBox(height: 12),
                     const _UpdateItem(
                       icon: Icons.shield_outlined,
-                      title: 'Retomada com verificação',
-                      description: 'Releases/Artifacts continuam com retomada; links públicos agora conferem intervalo e tamanho para evitar arquivos corrompidos.',
+                      title: 'Segurança preservada',
+                      description: 'As operações afetam apenas Secrets do repositório selecionado, com checagem de permissão. Downloads, Builds e demais módulos permanecem inalterados.',
                     ),
                   ],
                 ),

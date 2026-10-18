@@ -117,3 +117,44 @@ class SecretBatchResult {
     return buffer.toString().trimRight();
   }
 }
+
+/// Resultado da exclusão em massa. Valores de Secrets nunca são consultados.
+class SecretDeletionItemResult {
+  const SecretDeletionItemResult({
+    required this.name,
+    required this.success,
+    this.message,
+    this.httpStatus,
+  });
+
+  final String name;
+  final bool success;
+  final String? message;
+  final int? httpStatus;
+}
+
+class SecretDeletionResult {
+  const SecretDeletionResult({required this.items});
+
+  final List<SecretDeletionItemResult> items;
+
+  int get total => items.length;
+  int get deleted => items.where((item) => item.success).length;
+  int get failed => total - deleted;
+  bool get allSucceeded => failed == 0;
+
+  String diagnosticText({required String repositoryFullName}) {
+    final output = StringBuffer()
+      ..writeln('GitHub Manager - Exclusão de Secrets')
+      ..writeln('Repositório: $repositoryFullName')
+      ..writeln('Excluídos: $deleted de $total')
+      ..writeln('Falhas: $failed')
+      ..writeln('Valores secretos: não consultados');
+    for (final item in items) {
+      output.writeln(item.success
+          ? 'OK: ${item.name}'
+          : 'ERRO: ${item.name} - ${item.message ?? 'Não excluído'}${item.httpStatus == null ? '' : ' (HTTP ${item.httpStatus})'}');
+    }
+    return output.toString().trimRight();
+  }
+}

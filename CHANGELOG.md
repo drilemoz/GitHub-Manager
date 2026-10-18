@@ -1,3 +1,11 @@
+## 2.0.132+200146 — 2026-10-17
+
+- Corrige a seleção de arquivos Secrets `.env` ocultos e variantes `.env.*` no navegador de arquivos Android usando seleção geral seguida de validação de extensão/conteúdo. Mantém TXT/JSON/XML.
+- Importação reconhece UTF-8 com BOM e `export` com espaços ou tabulações, sem exibir os valores em diagnósticos; preserva limite de 6 MiB/arquivo, nomes e limite de 48 KiB por Secret.
+- Adiciona botão **Excluir todas** no módulo Secrets: consulta os nomes atuais, exige confirmação digitando `EXCLUIR`, deleta individualmente via API GitHub, exibe progresso e resultado detalhado copiável, preservando falhas parciais.
+- Limita a exclusão aos Secrets de repositório selecionado; não afeta environment/organization secrets nem arquivos pessoais. Mantém validação de permissões GitHub.
+- Acrescenta testes de nomes `.env`, BOM, validação, exclusão parcial e contrato de UI. Versão, README, notas, Novidades e histórico sincronizados; build Flutter/Android pendente.
+
 ## 2.0.131+200145 — 2026-10-16
 
 - Adiciona em Configurações → Transferências a preferência persistente **Limpeza automática dos downloads** com modos Após concluir (padrão), Antes de iniciar e Desativada.

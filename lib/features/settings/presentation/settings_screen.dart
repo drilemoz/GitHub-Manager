@@ -312,16 +312,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                   children: const [
                     _ChangeNote(
+                      version: '2.0.132',
+                      text: 'Secrets aceita .env oculto e variantes; exclusão de todos com confirmação digitada, progresso e relatório.',
+                    ),
+                    _ChangeNote(
                       version: '2.0.131',
                       text: 'Limpeza automática de downloads por projeto, configurável antes, depois ou desativada, com proteção dos arquivos parciais.',
                     ),
                     _ChangeNote(
                       version: '2.0.130',
                       text: 'Pausar e Retomar downloads com arquivo parcial preservado, aviso de conexão sem progresso e proteção de Range.',
-                    ),
-                    _ChangeNote(
-                      version: '2.0.129',
-                      text: 'Adiciona Copiar relatório à auditoria Play, com achados, evidências, ressalvas e pendências em texto.',
                     ),
                   ],
                 ),
