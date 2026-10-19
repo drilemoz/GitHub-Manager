@@ -6,6 +6,9 @@ class RepositoryProjectInfo {
     this.packageName,
     this.applicationId,
     this.versionCode,
+    this.minSdk,
+    this.targetSdk,
+    this.compileSdk,
     this.versionSource,
     this.nameSource,
     this.metadataIssue,
@@ -17,6 +20,9 @@ class RepositoryProjectInfo {
   final String? packageName;
   final String? applicationId;
   final int? versionCode;
+  final int? minSdk;
+  final int? targetSdk;
+  final int? compileSdk;
   final String? versionSource;
   /// Fonte do nome exibido; quando ausente, foi usado o nome do GitHub.
   final String? nameSource;
@@ -35,6 +41,15 @@ class RepositoryProjectInfo {
     if (value == null) return null;
     final source = versionSource?.trim();
     return source == null || source.isEmpty ? value : '$value • $source';
+  }
+
+
+  String get sdkLabel {
+    final parts = <String>[];
+    if (targetSdk != null) parts.add('target $targetSdk');
+    if (minSdk != null) parts.add('min $minSdk');
+    if (compileSdk != null) parts.add('compile $compileSdk');
+    return parts.isEmpty ? 'SDK não identificado' : parts.join(' • ');
   }
 
   String get technologiesLabel =>

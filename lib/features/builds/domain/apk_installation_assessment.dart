@@ -78,6 +78,7 @@ class ApkInstallationAssessment {
         state: ApkInstallationState.install,
         packageName: packageName,
         availableVersion: availableVersion,
+        detail: 'O aplicativo não foi encontrado neste aparelho. Toque em Instalar para baixar a versão publicada no GitHub.',
       );
     }
     // Compara o código apenas quando AMBAS as fontes têm o valor da mesma

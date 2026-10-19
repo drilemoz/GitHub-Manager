@@ -67,6 +67,11 @@ void main() {
     final full = await service.load(_repo);
     expect(full.projectName, 'Câmera da Casa');
     expect(full.version, '1.2.3');
+    expect(full.applicationId, 'br.com.cameradacasa');
+    expect(full.minSdk, 24);
+    expect(full.targetSdk, 35);
+    expect(full.compileSdk, 36);
+    expect(full.sdkLabel, 'target 35 • min 24 • compile 36');
   });
 }
 
@@ -111,7 +116,7 @@ class _ProjectInfoClient extends GitHubApiClient {
   }) async {
     dynamic result;
     final androidFiles = <String, String>{
-      'app/build.gradle.kts': 'versionName = "1.2.3"\nversionCode = 123',
+      'app/build.gradle.kts': 'android { compileSdk = 36\n defaultConfig { minSdk = 24\n targetSdk = 35\n applicationId = "br.com.cameradacasa"\n versionName = "1.2.3"\n versionCode = 123 } }',
       'app/src/main/AndroidManifest.xml':
           '<manifest xmlns:android="http://schemas.android.com/apk/res/android"><application android:label="@string/app_name" /></manifest>',
       'app/src/main/res/values/strings.xml':

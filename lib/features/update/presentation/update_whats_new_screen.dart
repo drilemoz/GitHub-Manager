@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class UpdateWhatsNewScreen extends StatelessWidget {
-  static const releaseNotesVersion = '2.0.132';
+  static const releaseNotesVersion = '2.0.133';
 
   const UpdateWhatsNewScreen({
     required this.versionLabel,
@@ -69,21 +69,21 @@ class UpdateWhatsNewScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 24),
                     const _UpdateItem(
-                      icon: Icons.pause_circle_outline_rounded,
-                      title: 'Importação de Secrets .env',
-                      description: 'Importe arquivos .env, .env.local, TXT, JSON ou XML, mesmo que o Android oculte arquivos iniciados por ponto. O app valida o conteúdo antes de salvar.',
+                      icon: Icons.verified_rounded,
+                      title: 'Card APK redesenhado',
+                      description: 'O status do aplicativo instalado ficou mais claro, com estados visuais distintos e alerta em vermelho quando o app não está no aparelho.',
                     ),
                     const SizedBox(height: 12),
                     const _UpdateItem(
-                      icon: Icons.speed_rounded,
-                      title: 'Excluir todos os Secrets',
-                      description: 'Nova ação com confirmação digitada, contagem, progresso, resultado individual e opção de copiar relatório, sem revelar valores secretos.',
+                      icon: Icons.sell_outlined,
+                      title: 'Versão e SDK no topo do projeto',
+                      description: 'A versão agora aparece acima do nome do app e o cabeçalho pode mostrar o SDK Android detectado.',
                     ),
                     const SizedBox(height: 12),
                     const _UpdateItem(
-                      icon: Icons.shield_outlined,
-                      title: 'Segurança preservada',
-                      description: 'As operações afetam apenas Secrets do repositório selecionado, com checagem de permissão. Downloads, Builds e demais módulos permanecem inalterados.',
+                      icon: Icons.android_outlined,
+                      title: 'Detecção melhorada de instalação',
+                      description: 'O aplicativo passou a distinguir melhor quando o pacote não foi encontrado e também exibe targetSdk, minSdk e compileSdk quando disponíveis.',
                     ),
                   ],
                 ),

@@ -305,6 +305,9 @@ class RepositoryProjectInfoService {
       String? packageName;
       String? applicationId;
       int? versionCode;
+      int? minSdk;
+      int? targetSdk;
+      int? compileSdk;
       final metadataTechnologies = <String>[];
 
       Future<String?> readRoot(String name) async {
@@ -370,6 +373,15 @@ class RepositoryProjectInfoService {
                 final code = androidMap['versionCode'];
                 if (code is num) versionCode = code.toInt();
                 if (code is String) versionCode = int.tryParse(code);
+                final metadataMinSdk = androidMap['minSdk'];
+                if (metadataMinSdk is num) minSdk = metadataMinSdk.toInt();
+                if (metadataMinSdk is String) minSdk = int.tryParse(metadataMinSdk);
+                final metadataTargetSdk = androidMap['targetSdk'];
+                if (metadataTargetSdk is num) targetSdk = metadataTargetSdk.toInt();
+                if (metadataTargetSdk is String) targetSdk = int.tryParse(metadataTargetSdk);
+                final metadataCompileSdk = androidMap['compileSdk'];
+                if (metadataCompileSdk is num) compileSdk = metadataCompileSdk.toInt();
+                if (metadataCompileSdk is String) compileSdk = int.tryParse(metadataCompileSdk);
                 final androidVersion = androidMap['versionName'];
                 if (androidVersion is String && androidVersion.trim().isNotEmpty) {
                   version = androidVersion.trim().split('+').first;
@@ -543,7 +555,28 @@ class RepositoryProjectInfoService {
                       ?.group(1) ??
                   '',
             );
-            if (applicationId != null && version != null && versionCode != null) {
+            minSdk ??= int.tryParse(
+              RegExp(r'''\bminSdk(?:Version)?\s*(?:=\s*|\s+)(\d+)''')
+                      .firstMatch(raw)
+                      ?.group(1) ??
+                  '',
+            );
+            targetSdk ??= int.tryParse(
+              RegExp(r'''\btargetSdk(?:Version)?\s*(?:=\s*|\s+)(\d+)''')
+                      .firstMatch(raw)
+                      ?.group(1) ??
+                  '',
+            );
+            compileSdk ??= int.tryParse(
+              RegExp(r'''\bcompileSdk(?:Version)?\s*(?:=\s*|\s+)(\d+)''')
+                      .firstMatch(raw)
+                      ?.group(1) ??
+                  '',
+            );
+            if (applicationId != null &&
+                version != null &&
+                versionCode != null &&
+                (targetSdk != null || minSdk != null || compileSdk != null)) {
               break;
             }
           } catch (_) {
@@ -647,6 +680,9 @@ class RepositoryProjectInfoService {
         packageName: packageName,
         applicationId: applicationId,
         versionCode: versionCode,
+        minSdk: minSdk,
+        targetSdk: targetSdk,
+        compileSdk: compileSdk,
         versionSource: versionSource,
         nameSource: nameSource,
       );

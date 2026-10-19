@@ -1,4 +1,11 @@
-# GitHub Manager 2.0.132+200146
+# GitHub Manager 2.0.133+200147
+
+- Detecção de aplicativo instalado/ausente ajustada na consulta nativa do Android.
+- Card APK redesenhado, com destaque em vermelho quando o app não está instalado.
+- Cabeçalho do projeto reorganizado: versão em chip no topo e SDK Android visível.
+- RepositoryProjectInfo agora pode carregar minSdk, targetSdk e compileSdk a partir do repositório.
+- Validar em CI/aparelho a nova apresentação do card e a detecção em Android 11+.
+
 
 - Base 2.0.131+200145. Módulo Secrets: `pickImportFile` usa `FileType.any` devido a arquivos ocultos `.env` que não aparecem com filtro Android; `parseImportFile` aplica whitelist de nomes/extensões e decodificação UTF-8/BOM. O formato continua sem multilinhas literais.
 - `RepositorySecretsService.deleteMany` envia DELETE individual por nome para a API GitHub, com progresso, deduplicação e resultados por item; `SecretDeletionResult` não expõe conteúdo.

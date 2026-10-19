@@ -1,6 +1,6 @@
-### 2.0.132
+### 2.0.133
 
-A versão `version: 2.0.132+200146` melhora a seleção/importação de `.env` e variantes na tela Secrets, oferece exclusão em lote apenas após confirmação digitada, processamento individual, progresso e resultado copiável sem valores. Consulte `docs/RELEASE_2.0.132.md`.
+A versão 2.0.133+200147 melhora a detecção de app instalado, redesenha o card APK, destaca em vermelho quando o aplicativo não está no aparelho e exibe `targetSdk`, `minSdk` e `compileSdk` no cabeçalho e nas informações do projeto. Veja `docs/RELEASE_2.0.133.md`.
 
 ### 2.0.131
 

@@ -1,11 +1,11 @@
-# GitHub Manager 2.0.132
+# GitHub Manager 2.0.133
+## APK instalado com detecção melhor e SDK visível (2.0.133)
 
-## Secrets: arquivos .env e exclusão em lote (2.0.132)
-
-- **Importação:** o navegador do Android agora permite selecionar arquivos `.env`, `.ENV`, `.env.local`, `.env.production`, `.txt`, `.json` e `.xml`, incluindo nomes ocultos iniciados por ponto. Após a escolha o formato é verificado e o texto é interpretado localmente. `.env` aceita `NOME=valor`, `export NOME=valor` e `NOME: valor`, comentários e UTF-8 com BOM. Nomes inválidos, duplicados e valores acima de 48 KiB continuam rejeitados; o app não exibe valores na prévia.
-- **Excluir todas:** ao lado do contador de Secrets, a ação exige token com permissão adequada, lista atualizada do repositório e digitação de `EXCLUIR`. Apaga exclusivamente os Secrets daquele repositório, um por requisição, e mostra progresso e erros individuais. Resultado copiável sem valores. Não é reversível.
-- O GitHub não fornece os valores de Secrets existentes para recuperação. Guarde um backup seguro e fora do repositório antes de apagar. O módulo de imports continua usando sealed box com chave pública do GitHub.
-
+- **Status do APK redesenhado:** cartão mais claro, com estados visuais distintos para instalar, atualizar, atualizado e inconclusivo.
+- **App não instalado em vermelho:** quando o pacote não for encontrado no aparelho, o aviso fica destacado em vermelho.
+- **Versão no topo do card do projeto:** a versão foi movida para um chip acima do nome do app.
+- **SDK Android exibido:** o cabeçalho e a janela de informações do projeto podem mostrar `targetSdk`, `minSdk` e `compileSdk`.
+- **Detecção melhorada:** a checagem nativa do pacote foi ajustada para reduzir respostas inconclusivas.
 
 ## Limpeza automática por projeto (2.0.131)
 

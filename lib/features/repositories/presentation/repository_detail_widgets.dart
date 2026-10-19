@@ -9,52 +9,183 @@ class _RepositoryApkInstallationStatus extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final icon = switch (assessment.state) {
-      ApkInstallationState.install => Icons.download_outlined,
-      ApkInstallationState.update => Icons.system_update_alt_rounded,
-      ApkInstallationState.current => Icons.check_circle_outline_rounded,
-      ApkInstallationState.newerInstalled => Icons.phone_android_rounded,
-      ApkInstallationState.noApk => Icons.archive_outlined,
-      ApkInstallationState.unknown => Icons.help_outline_rounded,
+    final (icon, accent, soft) = switch (assessment.state) {
+      ApkInstallationState.install => (
+        Icons.cancel_outlined,
+        scheme.error,
+        scheme.errorContainer.withValues(alpha: .32),
+      ),
+      ApkInstallationState.update => (
+        Icons.system_update_alt_rounded,
+        scheme.primary,
+        scheme.primaryContainer.withValues(alpha: .24),
+      ),
+      ApkInstallationState.current => (
+        Icons.verified_rounded,
+        Colors.green.shade700,
+        Colors.green.shade50,
+      ),
+      ApkInstallationState.newerInstalled => (
+        Icons.phone_android_rounded,
+        Colors.teal.shade700,
+        Colors.teal.shade50,
+      ),
+      ApkInstallationState.noApk => (
+        Icons.archive_outlined,
+        scheme.error,
+        scheme.errorContainer.withValues(alpha: .22),
+      ),
+      ApkInstallationState.unknown => (
+        Icons.help_outline_rounded,
+        scheme.tertiary,
+        scheme.tertiaryContainer.withValues(alpha: .24),
+      ),
     };
-    final installed = assessment.installedVersion;
-    final available = assessment.availableVersion;
+    final installed = assessment.installedVersion?.trim();
+    final available = assessment.availableVersion?.trim();
+    final installedLabel = switch (assessment.state) {
+      ApkInstallationState.install => 'Não instalado',
+      _ => installed?.isNotEmpty == true ? installed! : 'não confirmado',
+    };
+    final githubLabel = available?.isNotEmpty == true ? available! : 'não identificada';
+    final title = switch (assessment.state) {
+      ApkInstallationState.install => 'APK não instalado',
+      ApkInstallationState.update => 'APK com atualização disponível',
+      ApkInstallationState.current => 'APK atualizado',
+      ApkInstallationState.newerInstalled => 'APK mais recente no aparelho',
+      ApkInstallationState.noApk => 'APK indisponível',
+      ApkInstallationState.unknown => 'Status do APK inconclusivo',
+    };
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 11),
+      decoration: BoxDecoration(
+        color: soft,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: accent.withValues(alpha: .40)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: .12),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Icon(icon, size: 20, color: accent),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w900,
+                            color: accent,
+                          ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      assessment.label,
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _StatusInfoChip(
+                label: 'No aparelho',
+                value: installedLabel,
+                emphasized: assessment.state == ApkInstallationState.install,
+                accent: assessment.state == ApkInstallationState.install ? scheme.error : null,
+              ),
+              _StatusInfoChip(label: 'GitHub', value: githubLabel),
+              if (assessment.packageName?.isNotEmpty == true)
+                _StatusInfoChip(label: 'Pacote', value: assessment.packageName!),
+            ],
+          ),
+          if (assessment.detail != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              assessment.detail!,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: assessment.state == ApkInstallationState.install
+                        ? scheme.error
+                        : scheme.onSurfaceVariant,
+                    fontWeight: assessment.state == ApkInstallationState.install
+                        ? FontWeight.w700
+                        : FontWeight.w500,
+                  ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusInfoChip extends StatelessWidget {
+  const _StatusInfoChip({
+    required this.label,
+    required this.value,
+    this.emphasized = false,
+    this.accent,
+  });
+
+  final String label;
+  final String value;
+  final bool emphasized;
+  final Color? accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final foreground = accent ?? (emphasized ? scheme.error : scheme.onSurface);
+    final background = emphasized
+        ? scheme.errorContainer.withValues(alpha: .34)
+        : scheme.surface.withValues(alpha: .72);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerLow,
-        border: Border.all(color: scheme.outlineVariant.withValues(alpha: .35)),
-        borderRadius: BorderRadius.circular(4),
+        color: background,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: emphasized
+              ? scheme.error.withValues(alpha: .28)
+              : scheme.outlineVariant.withValues(alpha: .35),
+        ),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 18, color: scheme.primary),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('APK: ${assessment.label}',
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        )),
-                if (installed != null || available != null)
-                  Text(
-                    'No aparelho: ${installed ?? "não confirmado"}  •  GitHub: ${available ?? "não identificada"}',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                if (assessment.detail != null)
-                  Text(
-                    assessment.detail!,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: scheme.onSurfaceVariant,
-                        ),
-                  ),
-              ],
+      child: RichText(
+        text: TextSpan(
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: foreground,
+                fontWeight: FontWeight.w700,
+              ),
+          children: [
+            TextSpan(
+              text: '$label: ',
+              style: TextStyle(
+                color: emphasized ? foreground : scheme.onSurfaceVariant,
+                fontWeight: FontWeight.w800,
+              ),
             ),
-          ),
-        ],
+            TextSpan(text: value),
+          ],
+        ),
       ),
     );
   }
@@ -115,6 +246,7 @@ class _RepositoryHeader extends StatelessWidget {
                   label: 'Versão',
                   value: info.version?.isNotEmpty == true ? 'v${info.version}' : 'Não identificada',
                 ),
+                _ProjectInfoLine(label: 'SDK Android', value: info.sdkLabel),
                 _ProjectInfoLine(label: 'Repositório', value: repository.fullName),
                 _ProjectInfoLine(label: 'Branch', value: repository.defaultBranch),
                 _ProjectInfoLine(
@@ -193,27 +325,37 @@ class _RepositoryHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: Wrap(
-                  spacing: 7,
-                  runSpacing: 4,
-                  crossAxisAlignment: WrapCrossAlignment.center,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        if (info.version?.isNotEmpty == true)
+                          _HeaderMetaChip(
+                            icon: Icons.sell_outlined,
+                            label: 'v${info.version}',
+                            highlighted: true,
+                          ),
+                        if (info.targetSdk != null)
+                          _HeaderMetaChip(
+                            icon: Icons.android_outlined,
+                            label: 'SDK ${info.targetSdk}',
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
                     Text(
                       info.projectName,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w900,
                           ),
                     ),
-                    if (info.version?.isNotEmpty == true)
-                      Text(
-                        'v${info.version}',
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              color: scheme.primary,
-                              fontWeight: FontWeight.w800,
-                            ),
-                      ),
                   ],
                 ),
               ),
@@ -260,6 +402,16 @@ class _RepositoryHeader extends StatelessWidget {
                   color: scheme.onSurfaceVariant,
                 ),
           ),
+          if (info.targetSdk != null || info.minSdk != null || info.compileSdk != null) ...[
+            const SizedBox(height: 7),
+            Text(
+              info.sdkLabel,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: scheme.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+          ],
           if (repository.description?.trim().isNotEmpty == true) ...[
             const SizedBox(height: 10),
             Text(
@@ -280,6 +432,51 @@ class _RepositoryHeader extends StatelessWidget {
                   ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+class _HeaderMetaChip extends StatelessWidget {
+  const _HeaderMetaChip({
+    required this.icon,
+    required this.label,
+    this.highlighted = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool highlighted;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: highlighted
+            ? scheme.primaryContainer.withValues(alpha: .78)
+            : scheme.surfaceContainerHighest.withValues(alpha: .55),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: highlighted
+              ? scheme.primary.withValues(alpha: .28)
+              : scheme.outlineVariant.withValues(alpha: .26),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: highlighted ? scheme.primary : scheme.onSurfaceVariant),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: highlighted ? scheme.primary : scheme.onSurface,
+                ),
+          ),
         ],
       ),
     );

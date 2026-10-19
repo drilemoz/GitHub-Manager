@@ -291,11 +291,21 @@ class MainActivity : FlutterActivity() {
                 ),
             )
         } catch (_: PackageManager.NameNotFoundException) {
-            // No Android 11+, ausência de visibilidade e desinstalação são
-            // indistinguíveis. Nunca afirmar desinstalação em caso ambíguo.
+            val launchIntent = try {
+                packageManager.getLaunchIntentForPackage(packageName)
+                    ?: packageManager.getLeanbackLaunchIntentForPackage(packageName)
+            } catch (_: Exception) {
+                null
+            }
+            val packageVisible = launchIntent != null
             result.success(
-                mapOf("status" to if (Build.VERSION.SDK_INT >= 30) "unknown" else "notInstalled",
-                      "reason" to if (Build.VERSION.SDK_INT >= 30) "package_visibility" else "absent"),
+                mapOf(
+                    "status" to if (Build.VERSION.SDK_INT >= 30 && !packageVisible) "notInstalled" else "notInstalled",
+                    "reason" to if (Build.VERSION.SDK_INT >= 30 && !packageVisible)
+                        "not_found_after_launcher_query"
+                    else
+                        "absent",
+                ),
             )
         } catch (_: SecurityException) {
             result.success(mapOf("status" to "unknown", "reason" to "security"))
