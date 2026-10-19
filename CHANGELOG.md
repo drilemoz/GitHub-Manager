@@ -1,3 +1,10 @@
+## 2.0.134+200148 — 2026-10-19
+
+- Corrige a falha da etapa **Validar versão canônica** do workflow Android APK #123: o `docs/VERSIONING.md` agora inclui o marcador exato `version: 2.0.134+200148` exigido por `tool/check_version_sync.sh`.
+- Restaura os registros históricos das versões 2.0.133 e 2.0.132 na documentação, mantendo a sequência sem sobrescrever o histórico.
+- Adiciona teste de regressão de sincronização de versão e preserva o redesign do cartão APK, identificação de SDK Android, Secrets e Downloads.
+- Atualiza versionName/versionCode, README, CHANGELOG, tela de Novidades, histórico de Configurações, release notes e demais metadados.
+
 ## 2.0.133+200147 — 2026-10-19
 
 - Melhora a detecção de aplicativo instalado/ausente na tela do repositório, reduzindo resultados inconclusivos ao consultar o pacote Android.
@@ -5,6 +12,14 @@
 - Move a versão do projeto para o topo do cabeçalho e adiciona chip de SDK Android.
 - Identifica e exibe `targetSdk`, `minSdk` e `compileSdk` quando declarados estaticamente no repositório.
 - Atualiza README, VERSIONING, notas da versão, Configurações, tela de Novidades e testes/contratos relacionados.
+
+## 2.0.132+200146 — 2026-10-17
+
+- Corrige a seleção de arquivos Secrets `.env` ocultos e variantes `.env.*` no navegador de arquivos Android usando seleção geral seguida de validação de extensão/conteúdo. Mantém TXT/JSON/XML.
+- Importação reconhece UTF-8 com BOM e `export` com espaços ou tabulações, sem exibir os valores em diagnósticos; preserva limite de 6 MiB/arquivo, nomes e limite de 48 KiB por Secret.
+- Adiciona botão **Excluir todas** no módulo Secrets: consulta os nomes atuais, exige confirmação digitando `EXCLUIR`, deleta individualmente via API GitHub, exibe progresso e resultado detalhado copiável, preservando falhas parciais.
+- Limita a exclusão aos Secrets de repositório selecionado; não afeta environment/organization secrets nem arquivos pessoais. Mantém validação de permissões GitHub.
+- Acrescenta testes de nomes `.env`, BOM, validação, exclusão parcial e contrato de UI. Versão, README, notas, Novidades e histórico sincronizados; build Flutter/Android pendente.
 
 ## 2.0.131+200145 — 2026-10-16
 

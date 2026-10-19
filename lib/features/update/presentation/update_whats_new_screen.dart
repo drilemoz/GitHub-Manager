@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class UpdateWhatsNewScreen extends StatelessWidget {
-  static const releaseNotesVersion = '2.0.133';
+  static const releaseNotesVersion = '2.0.134';
 
   const UpdateWhatsNewScreen({
     required this.versionLabel,
@@ -70,20 +70,20 @@ class UpdateWhatsNewScreen extends StatelessWidget {
                     const SizedBox(height: 24),
                     const _UpdateItem(
                       icon: Icons.verified_rounded,
-                      title: 'Card APK redesenhado',
-                      description: 'O status do aplicativo instalado ficou mais claro, com estados visuais distintos e alerta em vermelho quando o app não está no aparelho.',
+                      title: 'Versionamento corrigido',
+                      description: 'Corrigido o marcador de versão canônica na documentação que interrompeu o workflow Android APK #123.',
                     ),
                     const SizedBox(height: 12),
                     const _UpdateItem(
-                      icon: Icons.sell_outlined,
-                      title: 'Versão e SDK no topo do projeto',
-                      description: 'A versão agora aparece acima do nome do app e o cabeçalho pode mostrar o SDK Android detectado.',
+                      icon: Icons.history_rounded,
+                      title: 'Histórico restaurado',
+                      description: 'Versões 2.0.132 e 2.0.133 preservadas na documentação, com teste de regressão para evitar novas divergências.',
                     ),
                     const SizedBox(height: 12),
                     const _UpdateItem(
-                      icon: Icons.android_outlined,
-                      title: 'Detecção melhorada de instalação',
-                      description: 'O aplicativo passou a distinguir melhor quando o pacote não foi encontrado e também exibe targetSdk, minSdk e compileSdk quando disponíveis.',
+                      icon: Icons.android_rounded,
+                      title: 'Detecção e SDK preservados',
+                      description: 'Mantidas as melhorias anteriores do cartão APK e a identificação do SDK Android no projeto.',
                     ),
                   ],
                 ),

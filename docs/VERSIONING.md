@@ -1,6 +1,14 @@
+### 2.0.134
+
+A versão canônica é `version: 2.0.134+200148` (versionName 2.0.134; versionCode 200148). Corrige a documentação que bloqueou a validação de versão do workflow **Android APK #123**, restaura o histórico de versões e introduz teste de regressão. Consulte `docs/RELEASE_2.0.134.md`.
+
 ### 2.0.133
 
-A versão 2.0.133+200147 melhora a detecção de app instalado, redesenha o card APK, destaca em vermelho quando o aplicativo não está no aparelho e exibe `targetSdk`, `minSdk` e `compileSdk` no cabeçalho e nas informações do projeto. Veja `docs/RELEASE_2.0.133.md`.
+A versão `version: 2.0.133+200147` melhorou a detecção do APK instalado, redesenhou seu cartão e passou a identificar SDK Android no detalhe do projeto. Consulte `docs/RELEASE_2.0.133.md`.
+
+### 2.0.132
+
+A versão `version: 2.0.132+200146` melhora a seleção/importação de `.env` e variantes na tela Secrets, oferece exclusão em lote apenas após confirmação digitada, processamento individual, progresso e resultado copiável sem valores. Consulte `docs/RELEASE_2.0.132.md`.
 
 ### 2.0.131
 

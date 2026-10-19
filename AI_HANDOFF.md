@@ -1,4 +1,6 @@
-# GitHub Manager 2.0.133+200147
+# GitHub Manager 2.0.134+200148
+
+- Android APK #123: docs/VERSIONING.md estava sem o literal `version: 2.0.133+200147` e interrompia o workflow antes do flutter analyze. Corrigido na 2.0.134, com teste de regressão e histórico restaurado.
 
 - Detecção de aplicativo instalado/ausente ajustada na consulta nativa do Android.
 - Card APK redesenhado, com destaque em vermelho quando o app não está instalado.

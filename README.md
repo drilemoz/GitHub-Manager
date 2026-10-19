@@ -1,4 +1,10 @@
-# GitHub Manager 2.0.133
+# GitHub Manager 2.0.134
+## Correção do versionamento da CI Android APK #123 (2.0.134)
+
+- Corrige a documentação canônica `docs/VERSIONING.md` para corresponder ao formato exigido pelo workflow.
+- Preserva os recursos de identificação do SDK e a análise de app instalado, introduzidos na versão 2.0.133.
+- Adiciona teste de regressão para evitar novas divergências entre o versionamento do projeto e a documentação.
+
 ## APK instalado com detecção melhor e SDK visível (2.0.133)
 
 - **Status do APK redesenhado:** cartão mais claro, com estados visuais distintos para instalar, atualizar, atualizado e inconclusivo.
