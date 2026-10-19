@@ -1,3 +1,10 @@
+# GitHub Manager 2.0.135+200149
+
+- A importação ZIP aceita `STATUS.json` de nível raiz/raiz efetiva, extrai version/project/app_name/application_id; não confunde `confirmed_manager_manifest_version`, `confirmed_termux_app_version` ou `build_apk_version_*_expected` com versão da integração.
+- RepositoryProjectInfoService aceita `STATUS.json` no resumo/detalhe, e o resumo usa caminho original case-sensitive da API GitHub. Validar principalmente com STATUS.json e MANIFEST.json maiúsculos.
+- Android APK #124 teve 253 testes aprovados e 2 reprovados: raio de corners do card APK normalizado; visibilidade do PackageManager restaurada (`unknown` no Android 11+ quando pacote não aparece).
+- Verificar nova versão pelo GitHub Actions; Android/Flutter SDK não disponível aqui.
+
 # GitHub Manager 2.0.134+200148
 
 - Android APK #123: docs/VERSIONING.md estava sem o literal `version: 2.0.133+200147` e interrompia o workflow antes do flutter analyze. Corrigido na 2.0.134, com teste de regressão e histórico restaurado.

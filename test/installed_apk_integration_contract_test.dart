@@ -13,6 +13,8 @@ void main() {
     expect(kotlin, contains('getPackageInfo(packageName'));
     expect(kotlin, contains('info.longVersionCode'));
     expect(kotlin, contains('"package_visibility"'));
+    expect(kotlin, contains('if (Build.VERSION.SDK_INT >= 30) "unknown" else "notInstalled"'));
+    expect(kotlin, isNot(contains('"not_found_after_launcher_query"')));
     expect(manifest, contains('<queries>'));
     expect(manifest, contains('android.intent.category.LAUNCHER'));
     expect(manifest, isNot(contains('android.permission.QUERY_ALL_PACKAGES')));

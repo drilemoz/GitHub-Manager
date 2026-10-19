@@ -1,4 +1,12 @@
-# GitHub Manager 2.0.134
+# GitHub Manager 2.0.135
+## STATUS.json + correções do Android APK #124 (2.0.135)
+
+- Ao **conferir um envio de ZIP**, reconhece `STATUS.json` na raiz (ou raiz efetiva) e usa sua versão interna como evidência real, não apenas a pista do nome do arquivo.
+- Na busca de metadados do repositório, preserva **maiúsculas/minúsculas** do caminho real do GitHub, permitindo localizar `STATUS.json` e `MANIFEST.json`.
+- Suporta `project`, `app_name` e `application_id` de `STATUS.json`; mantém **separadas** a versão da integração, a do manager incorporado e a do APK esperado.
+- Corrige os testes do Android APK #124: raios retangulares do card seguem 4 dp; raios realmente em pill preservam 99 dp. A consulta Android não declara um pacote ausente quando o sistema pode ocultá-lo.
+- Acrescenta regressões para a versão do ZIP e do repositório, inclusive arquivos de subprojetos que não devem sobrepor a raiz.
+
 ## Correção do versionamento da CI Android APK #123 (2.0.134)
 
 - Corrige a documentação canônica `docs/VERSIONING.md` para corresponder ao formato exigido pelo workflow.

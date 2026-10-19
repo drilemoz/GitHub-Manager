@@ -60,9 +60,14 @@ class RepositoryProjectInfoService {
         'app.json',
         'project.json',
         'manifest.json',
+        'status.json',
       ].where(names.containsKey).firstOrNull;
       if (metadataFile != null) {
-        final raw = await readPath(metadataFile);
+        // A API GitHub usa caminhos com maiúsculas/minúsculas exatas.
+        // A busca é case-insensitive, mas a leitura preserva o path original
+        // (ex.: STATUS.json e MANIFEST.json).
+        final metadataPath = names[metadataFile]?['path'] as String? ?? metadataFile;
+        final raw = await readPath(metadataPath);
         if (raw != null) {
           try {
             final decoded = jsonDecode(raw);
@@ -72,22 +77,24 @@ class RepositoryProjectInfoService {
                   map['product'] ??
                   map['projectName'] ??
                   map['appName'] ??
+                  map['app_name'] ??
+                  map['project'] ??
                   map['name'];
               final candidateVersion = _versionFromJsonMap(map);
               final android = map['android'];
               if (candidateName is String && candidateName.trim().isNotEmpty) {
                 projectName = candidateName.trim();
-                nameSource = metadataFile;
+                nameSource = metadataPath;
               }
               if (candidateVersion is String && candidateVersion.trim().isNotEmpty) {
                 version = candidateVersion.trim().split('+').first;
-                versionSource = metadataFile;
+                versionSource = metadataPath;
               }
               if (version == null && android is Map) {
                 final androidVersion = android['versionName'];
                 if (androidVersion is String && androidVersion.trim().isNotEmpty) {
                   version = androidVersion.trim().split('+').first;
-                  versionSource = metadataFile;
+                  versionSource = metadataPath;
                 }
               }
             }
@@ -337,8 +344,10 @@ class RepositoryProjectInfoService {
         'app.json',
         'project.json',
         'manifest.json',
+        'status.json',
       ].where(names.containsKey).firstOrNull;
       if (metadataFile != null) {
+        final metadataPath = names[metadataFile]?['path'] as String? ?? metadataFile;
         final raw = await readRoot(metadataFile);
         if (raw != null) {
           try {
@@ -349,20 +358,30 @@ class RepositoryProjectInfoService {
                   map['product'] ??
                   map['projectName'] ??
                   map['appName'] ??
+                  map['app_name'] ??
+                  map['project'] ??
                   map['name'];
               final candidateVersion = _versionFromJsonMap(map);
               final candidatePackage = map['name'] ?? map['package'];
               final android = map['android'];
               if (candidateName is String && candidateName.trim().isNotEmpty) {
                 projectName = candidateName.trim();
-                nameSource = metadataFile;
+                nameSource = metadataPath;
               }
               if (candidateVersion?.isNotEmpty == true) {
                 version = candidateVersion;
-                versionSource = metadataFile;
+                versionSource = metadataPath;
               }
               if (candidatePackage is String && candidatePackage.trim().isNotEmpty) {
                 packageName = candidatePackage.trim();
+              }
+              if (metadataFile == 'status.json') {
+                // Identidade do aplicativo Android; a versão principal do
+                // projeto continua sendo a da integração, não a do APK base.
+                final statusApplicationId = map['application_id'];
+                if (statusApplicationId is String && statusApplicationId.trim().isNotEmpty) {
+                  applicationId = statusApplicationId.trim();
+                }
               }
               if (android is Map) {
                 final androidMap = Map<String, dynamic>.from(android);
@@ -385,7 +404,7 @@ class RepositoryProjectInfoService {
                 final androidVersion = androidMap['versionName'];
                 if (androidVersion is String && androidVersion.trim().isNotEmpty) {
                   version = androidVersion.trim().split('+').first;
-                  versionSource = metadataFile;
+                  versionSource = metadataPath;
                 }
               }
               for (final candidate in [

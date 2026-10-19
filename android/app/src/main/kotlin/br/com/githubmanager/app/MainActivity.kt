@@ -291,20 +291,13 @@ class MainActivity : FlutterActivity() {
                 ),
             )
         } catch (_: PackageManager.NameNotFoundException) {
-            val launchIntent = try {
-                packageManager.getLaunchIntentForPackage(packageName)
-                    ?: packageManager.getLeanbackLaunchIntentForPackage(packageName)
-            } catch (_: Exception) {
-                null
-            }
-            val packageVisible = launchIntent != null
+            // Android 11+ pode ocultar um pacote existente. Nem getPackageInfo
+            // nem getLaunchIntentForPackage permitem concluir que foi removido
+            // quando o pacote não está visível. Não mostrar falso "Não instalado".
             result.success(
                 mapOf(
-                    "status" to if (Build.VERSION.SDK_INT >= 30 && !packageVisible) "notInstalled" else "notInstalled",
-                    "reason" to if (Build.VERSION.SDK_INT >= 30 && !packageVisible)
-                        "not_found_after_launcher_query"
-                    else
-                        "absent",
+                    "status" to if (Build.VERSION.SDK_INT >= 30) "unknown" else "notInstalled",
+                    "reason" to if (Build.VERSION.SDK_INT >= 30) "package_visibility" else "absent",
                 ),
             )
         } catch (_: SecurityException) {

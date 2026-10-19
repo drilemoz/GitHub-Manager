@@ -1,3 +1,7 @@
+### 2.0.135
+
+A versão canônica é `version: 2.0.135+200149` (versionName 2.0.135; Android versionCode 200149). Adiciona suporte a `STATUS.json` e corrige as duas falhas de testes do workflow Android APK #124, com regressões. Consulte `docs/RELEASE_2.0.135.md`.
+
 ### 2.0.134
 
 A versão canônica é `version: 2.0.134+200148` (versionName 2.0.134; versionCode 200148). Corrige a documentação que bloqueou a validação de versão do workflow **Android APK #123**, restaura o histórico de versões e introduz teste de regressão. Consulte `docs/RELEASE_2.0.134.md`.

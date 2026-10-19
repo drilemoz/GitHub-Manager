@@ -7,10 +7,97 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:github_manager/core/network/github_api_client.dart';
 import 'package:github_manager/core/security/secure_storage_service.dart';
 import 'package:github_manager/features/projects/data/local_project_service.dart';
+import 'package:github_manager/features/projects/domain/project_safety_check.dart';
 import 'package:github_manager/features/repositories/data/repository_project_info_service.dart';
 import 'package:github_manager/features/repositories/domain/github_repository.dart';
 
 void main() {
+
+  test('Termux Manager: STATUS.json confirma versão do projeto no ZIP', () async {
+    final temp = await Directory.systemTemp.createTemp('gm-status-');
+    addTearDown(() => temp.delete(recursive: true));
+
+    final status = utf8.encode(jsonEncode(<String, dynamic>{
+      'project': 'Termux Manager',
+      'version': '0.1.0-alpha.5',
+      'integration_build_number': 5,
+      'app_name': 'Termux Manager',
+      'application_id': 'com.termux',
+      'confirmed_manager_manifest_version': '1.0.133',
+      'confirmed_termux_app_version': '0.118.0',
+      'build_apk_version_name_expected': '0.118.0+tm.5',
+      'build_apk_version_code_expected': 118005,
+    }));
+    final readme = utf8.encode('# Termux Manager');
+    final archive = Archive()
+      ..addFile(ArchiveFile('STATUS.json', status.length, status))
+      ..addFile(ArchiveFile('README.md', readme.length, readme));
+    final zipped = ZipEncoder().encode(archive);
+    final zip = File('${temp.path}/Termux-Manager-v0.1.0-alpha.5-Manager1.0.133.zip')
+      ..writeAsBytesSync(zipped);
+
+    final preview = await LocalProjectService().analyzeZip(zip.path);
+    expect(preview.projectName, 'Termux Manager');
+    expect(preview.version, '0.1.0-alpha.5');
+    expect(preview.versionSource, 'STATUS.json');
+    expect(preview.applicationId, 'com.termux');
+    expect(preview.versionCode, isNull); // APK versionCode ≠ integração
+    expect(preview.inferredVersion, isNull);
+  });
+
+  test('STATUS.json apenas dentro de subprojeto não suplanta a raiz', () async {
+    final temp = await Directory.systemTemp.createTemp('gm-status-sub-');
+    addTearDown(() => temp.delete(recursive: true));
+    final pubspec = utf8.encode('name: principal\nversion: 2.3.4+234\n');
+    final nested = utf8.encode('{"project":"Outro","version":"9.9.9"}');
+    final archive = Archive()
+      ..addFile(ArchiveFile('Projeto/pubspec.yaml', pubspec.length, pubspec))
+      ..addFile(ArchiveFile('Projeto/example/STATUS.json', nested.length, nested));
+    final zip = File('${temp.path}/Projeto.zip')
+      ..writeAsBytesSync(ZipEncoder().encode(archive));
+
+    final preview = await LocalProjectService().analyzeZip(zip.path);
+    expect(preview.version, '2.3.4');
+    expect(preview.versionSource, 'pubspec.yaml');
+  });
+
+  test('repositório com STATUS.json expõe versão de integração em resumo e detalhes', () async {
+    final client = _FakeTermuxGitHubApiClient(statusOnly: true);
+    final service = RepositoryProjectInfoService(client);
+    const repo = GitHubRepository(
+      id: 3,
+      name: 'Termux-Manager',
+      fullName: 'owner/TermuxManager',
+      isPrivate: false,
+      isArchived: false,
+      defaultBranch: 'main',
+      updatedAt: null,
+      htmlUrl: 'https://github.com/owner/TermuxManager',
+      language: 'Shell',
+    );
+    final summary = await service.loadSummary(repo, branch: 'develop');
+    final info = await service.load(repo, branch: 'develop');
+    expect(summary.projectName, 'Termux Manager');
+    expect(summary.version, '0.1.0-alpha.5');
+    expect(summary.versionSource, 'STATUS.json');
+    expect(info.projectName, 'Termux Manager');
+    expect(info.version, '0.1.0-alpha.5');
+    expect(info.applicationId, 'com.termux');
+    expect(info.versionSource, 'STATUS.json');
+    expect(info.versionCode, isNull);
+    expect(client.requestedRefs, everyElement('develop'));
+    final fixtureZip = await _statusFixtureZip();
+    addTearDown(() => File(fixtureZip).delete());
+    final preview = await LocalProjectService().analyzeZip(fixtureZip);
+    final safety = ProjectSafetyCheck.compare(
+      project: preview,
+      repository: repo,
+      repositoryInfo: info,
+    );
+    expect(safety.versionComparison, ProjectVersionComparison.same);
+    expect(safety.identitySource, 'applicationId');
+  });
+
   test('Termux Manager lê versão do MANIFEST.json', () async {
     final temp = await Directory.systemTemp.createTemp('gm-termux-manifest-');
     addTearDown(() => temp.delete(recursive: true));
@@ -144,7 +231,9 @@ echo ok
 
 
 class _FakeTermuxGitHubApiClient extends GitHubApiClient {
-  _FakeTermuxGitHubApiClient() : super(SecureStorageService());
+  _FakeTermuxGitHubApiClient({this.statusOnly = false}) : super(SecureStorageService());
+
+  final bool statusOnly;
 
   final List<String> requestedRefs = <String>[];
 
@@ -161,8 +250,8 @@ class _FakeTermuxGitHubApiClient extends GitHubApiClient {
     if (path == '/repos/owner/TermuxManager/contents') {
       data = <dynamic>[
         <String, dynamic>{
-          'name': 'MANIFEST.json',
-          'path': 'MANIFEST.json',
+          'name': statusOnly ? 'STATUS.json' : 'MANIFEST.json',
+          'path': statusOnly ? 'STATUS.json' : 'MANIFEST.json',
           'type': 'file',
         },
         <String, dynamic>{
@@ -171,6 +260,21 @@ class _FakeTermuxGitHubApiClient extends GitHubApiClient {
           'type': 'file',
         },
       ];
+    } else if (path == '/repos/owner/TermuxManager/contents/STATUS.json' && statusOnly) {
+      final status = jsonEncode(<String, dynamic>{
+        'project': 'Termux Manager',
+        'version': '0.1.0-alpha.5',
+        'app_name': 'Termux Manager',
+        'application_id': 'com.termux',
+        'confirmed_manager_manifest_version': '1.0.133',
+        'confirmed_termux_app_version': '0.118.0',
+        'build_apk_version_name_expected': '0.118.0+tm.5',
+        'build_apk_version_code_expected': 118005,
+      });
+      data = <String, dynamic>{
+        'encoding': 'base64',
+        'content': base64.encode(utf8.encode(status)),
+      };
     } else if (path == '/repos/owner/TermuxManager/contents/MANIFEST.json') {
       final manifest = jsonEncode(<String, dynamic>{
         'name': 'Termux Manager',
@@ -192,4 +296,18 @@ class _FakeTermuxGitHubApiClient extends GitHubApiClient {
       statusCode: 200,
     );
   }
+}
+
+Future<String> _statusFixtureZip() async {
+  final path = '${Directory.systemTemp.path}/gm-status-contract-${DateTime.now().microsecondsSinceEpoch}.zip';
+  final status = utf8.encode(jsonEncode({
+    'project': 'Termux Manager',
+    'version': '0.1.0-alpha.5',
+    'app_name': 'Termux Manager',
+    'application_id': 'com.termux',
+  }));
+  final archive = Archive()
+    ..addFile(ArchiveFile('STATUS.json', status.length, status));
+  await File(path).writeAsBytes(ZipEncoder().encode(archive));
+  return path;
 }

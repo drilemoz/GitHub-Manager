@@ -4,7 +4,7 @@ publish_to: "none"
 
 # Fonte canônica de versionName/versionCode.
 # Nunca duplicar a versão manualmente em Gradle, UI ou workflows.
-version: 2.0.134+200148
+version: 2.0.135+200149
 
 environment:
   sdk: ">=3.13.0 <4.0.0"

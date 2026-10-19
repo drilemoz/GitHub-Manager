@@ -1,3 +1,10 @@
+## 2.0.135+200149 — 2026-10-19
+
+- Reconhece `STATUS.json` na importação de ZIP e na consulta de repositórios (resumo e detalhes), priorizando a versão `version` declarada pela integração e mantendo separadas as versões do manager embutido e do APK Android esperado.
+- Corrige leitura de caminhos case-sensitive da API GitHub para arquivos como `STATUS.json` e `MANIFEST.json`.
+- Corrige os 2 testes reprovados no workflow **Android APK #124**: card APK volta a respeitar retângulos de raio 4 dp e pills de raio 99 dp; consulta nativa volta a tratar ausência de visibilidade no Android 11+ como inconclusiva, evitando falsos negativos.
+- Adiciona testes de regressão para `STATUS.json`, origem dos metadados e visibilidade Android; sincroniza versionCode, README, CHANGELOG, VERSIONING, Novidades, Configurações e notas da versão.
+
 ## 2.0.134+200148 — 2026-10-19
 
 - Corrige a falha da etapa **Validar versão canônica** do workflow Android APK #123: o `docs/VERSIONING.md` agora inclui o marcador exato `version: 2.0.134+200148` exigido por `tool/check_version_sync.sh`.

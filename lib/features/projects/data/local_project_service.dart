@@ -211,6 +211,7 @@ class LocalProjectService {
   static bool _isIdentityFile(String lowerPath) =>
       lowerPath.endsWith('github-manager.json') ||
       lowerPath.endsWith('app_identity.json') ||
+      lowerPath.endsWith('status.json') ||
       lowerPath.endsWith('app.json') ||
       lowerPath.endsWith('project.json') ||
       lowerPath.endsWith('manifest.json') ||
@@ -291,6 +292,21 @@ class LocalProjectService {
             }
           }
         } catch (_) {}
+      } else if (lower == 'status.json') {
+        // STATUS.json do Termux Manager descreve a versão da integração.
+        // Os campos de versão do Termux/manager embutido/APK esperado
+        // representam produtos diferentes e NÃO devem ser comparados com ela.
+        try {
+          final raw = jsonDecode(text);
+          if (raw is Map) {
+            final map = Map<String, dynamic>.from(raw);
+            projectName ??= _firstString([map['app_name'], map['project']]);
+            applicationId ??= _firstString([map['application_id']]);
+            useVersion(_firstString([map['version']]), source);
+          }
+        } catch (_) {
+          // Metadata opcional inválida não substitui outros identificadores.
+        }
       } else if (lower == 'pubspec.yaml') {
         packageName ??= RegExp(r'^name:\s*([^\s#]+)', multiLine: true)
             .firstMatch(text)?.group(1)?.trim();
@@ -371,6 +387,7 @@ class LocalProjectService {
       'manifest.json': 2,
       'app.json': 3,
       'project.json': 4,
+      'status.json': 5,
       'pubspec.yaml': 10,
       'project.godot': 11,
       'package.json': 12,

@@ -312,16 +312,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                   children: const [
                     _ChangeNote(
+                      version: '2.0.135',
+                      text: 'Reconhece STATUS.json do Termux Manager, corrige a leitura de caminhos GitHub e resolve dois testes do Android APK #124.',
+                    ),
+                    _ChangeNote(
                       version: '2.0.134',
                       text: 'Corrige a versão canônica do workflow Android APK #123 e restaura o histórico documental com teste de regressão.',
                     ),
                     _ChangeNote(
                       version: '2.0.133',
                       text: 'Melhora a detecção de app instalado, redesenha o card APK e mostra versão/SDK no topo do projeto.',
-                    ),
-                    _ChangeNote(
-                      version: '2.0.132',
-                      text: 'Secrets aceita .env oculto e variantes; exclusão de todos com confirmação digitada, progresso e relatório.',
                     ),
                   ],
                 ),

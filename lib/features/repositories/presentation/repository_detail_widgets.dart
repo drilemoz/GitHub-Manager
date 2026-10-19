@@ -60,7 +60,7 @@ class _RepositoryApkInstallationStatus extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 11),
       decoration: BoxDecoration(
         color: soft,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(4),
         border: Border.all(color: accent.withValues(alpha: .40)),
       ),
       child: Column(
@@ -74,7 +74,7 @@ class _RepositoryApkInstallationStatus extends StatelessWidget {
                 height: 34,
                 decoration: BoxDecoration(
                   color: accent.withValues(alpha: .12),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(99),
                 ),
                 child: Icon(icon, size: 20, color: accent),
               ),

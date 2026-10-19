@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class UpdateWhatsNewScreen extends StatelessWidget {
-  static const releaseNotesVersion = '2.0.134';
+  static const releaseNotesVersion = '2.0.135';
 
   const UpdateWhatsNewScreen({
     required this.versionLabel,
@@ -69,21 +69,21 @@ class UpdateWhatsNewScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 24),
                     const _UpdateItem(
-                      icon: Icons.verified_rounded,
-                      title: 'Versionamento corrigido',
-                      description: 'Corrigido o marcador de versão canônica na documentação que interrompeu o workflow Android APK #123.',
+                      icon: Icons.folder_zip_outlined,
+                      title: 'Termux Manager reconhecido',
+                      description: 'Conferir envio de ZIP agora identifica a versão do projeto em STATUS.json e separa a integração das versões internas do manager e do APK.',
                     ),
                     const SizedBox(height: 12),
                     const _UpdateItem(
-                      icon: Icons.history_rounded,
-                      title: 'Histórico restaurado',
-                      description: 'Versões 2.0.132 e 2.0.133 preservadas na documentação, com teste de regressão para evitar novas divergências.',
+                      icon: Icons.sync_rounded,
+                      title: 'Metadados do GitHub corrigidos',
+                      description: 'A leitura respeita maiúsculas e minúsculas dos arquivos, como STATUS.json e MANIFEST.json, nos resumos e detalhes do repositório.',
                     ),
                     const SizedBox(height: 12),
                     const _UpdateItem(
-                      icon: Icons.android_rounded,
-                      title: 'Detecção e SDK preservados',
-                      description: 'Mantidas as melhorias anteriores do cartão APK e a identificação do SDK Android no projeto.',
+                      icon: Icons.verified_user_outlined,
+                      title: 'Correções no Android APK #124',
+                      description: 'Card APK alinhado ao padrão visual e detecção de pacotes protegida contra falsos avisos de aplicativo não instalado quando há visibilidade limitada.',
                     ),
                   ],
                 ),
