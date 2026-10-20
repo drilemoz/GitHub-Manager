@@ -1133,7 +1133,6 @@ class DownloadManagerService {
     _ensureStalledTimer();
     _emit();
     unawaited(_persistHistory());
-    unawaited(AppNotificationService.requestPermission());
     unawaited(_syncDownloadForegroundService(startService: true));
   }
 

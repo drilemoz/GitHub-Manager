@@ -1,4 +1,12 @@
-# GitHub Manager 2.0.135
+# GitHub Manager 2.0.136
+## Notificações silenciosas e configuráveis (2.0.136)
+
+- Em **Configurações → Notificações**, o usuário escolhe se quer avisos opcionais e quais: builds concluídas, problemas de builds, downloads concluídos e erros de downloads. **Desativado por padrão**, inclusive em atualizações, até escolha explícita.
+- O monitor passa a gravar cada ID de build em uma **tabela SQLite com reserva atômica**, evitando alertas repetidos entre o timer em primeiro plano e o WorkManager em segundo plano.
+- A lista limitada de 250 IDs é migrada para o histórico persistente. Builds mais antigas que 2 horas não são notificadas; tocar num aviso registra o evento como aberto.
+- Ao desligar os avisos opcionais, notificações locais anteriores são canceladas e o monitor de builds é suspenso. O app não solicita mais permissão de notificação só porque um download começou.
+- **Nota Android:** notificações de progresso dos serviços foreground de uploads/downloads ativos continuam enquanto a transferência estiver funcionando, porque fazem parte do serviço responsável pela transferência.
+
 ## STATUS.json + correções do Android APK #124 (2.0.135)
 
 - Ao **conferir um envio de ZIP**, reconhece `STATUS.json` na raiz (ou raiz efetiva) e usa sua versão interna como evidência real, não apenas a pista do nome do arquivo.

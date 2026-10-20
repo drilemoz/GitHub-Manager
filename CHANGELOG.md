@@ -1,3 +1,12 @@
+## 2.0.136+200150 — 2026-10-20
+
+- Notificações opcionais opt-in: chave geral e quatro categorias persistidas em Configurações, separando sucesso/falha de builds e downloads.
+- Deduplicação entre WorkManager e monitor em primeiro plano via transação SQLite e ledger persistente por runId, com migração dos 250 IDs históricos.
+- Restringe avisos de builds concluídas às 2 horas anteriores e posteriores à ativação consciente das notificações, evitando reaviso de eventos antigos.
+- Cancelamento dos avisos locais ao desligar; toque marca a build como aberta; atualização das preferências em tempo real, inclusive durante consultas pendentes.
+- Remove solicitação de permissão no início de downloads. Serviços foreground Android continuam notificando progresso obrigatório durante transferências ativas.
+- Adiciona testes de política/notificação, atualiza documentação, histórico e versionCode 200150. Build e testes Flutter completos pendentes da CI.
+
 ## 2.0.135+200149 — 2026-10-19
 
 - Reconhece `STATUS.json` na importação de ZIP e na consulta de repositórios (resumo e detalhes), priorizando a versão `version` declarada pela integração e mantendo separadas as versões do manager embutido e do APK Android esperado.

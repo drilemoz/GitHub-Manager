@@ -1,3 +1,11 @@
+# GitHub Manager 2.0.136+200150
+
+- Novas preferências opt-in em `lib/core/notifications/notification_preferences.dart` para avisos opcionais de conclusão/falha em builds/downloads. **Desligadas por padrão** mesmo após atualização, preservando preferências antigas apenas nos flags de builds.
+- SQLite `notification_events` em `LocalDatabase._ensureSchema` com transação `claimBuildNotification` compartilhada entre WorkManager e UI; migra ids legados, registra sent/opened, mantém histórico sem rotação de 250 IDs.
+- BuildMonitor só notifica conclusões de até 2 horas depois da ativação do usuário, reconsulta políticas durante o monitoramento e cancela WorkManager quando as categorias de build estiverem desativadas.
+- AppNotificationService consulta política antes de alertas locais, cancela opcionais ao desligar. Foreground nativo durante transfers não foi desligado por segurança.
+- Testar no GitHub Actions/analisar no aparelho: duplicidade ao abrir/dispensar, alternar master/categorias, conectividade e FGS ativo.
+
 # GitHub Manager 2.0.135+200149
 
 - A importação ZIP aceita `STATUS.json` de nível raiz/raiz efetiva, extrai version/project/app_name/application_id; não confunde `confirmed_manager_manifest_version`, `confirmed_termux_app_version` ou `build_apk_version_*_expected` com versão da integração.

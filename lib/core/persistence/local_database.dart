@@ -97,6 +97,13 @@ class LocalDatabase {
       'ON operation_logs(created_at)',
     );
     await db.execute('''
+      CREATE TABLE IF NOT EXISTS notification_events (
+        event_key TEXT PRIMARY KEY,
+        state TEXT NOT NULL,
+        updated_at INTEGER NOT NULL
+      )
+    ''');
+    await db.execute('''
       CREATE TABLE IF NOT EXISTS error_telemetry (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         source TEXT NOT NULL,
@@ -111,6 +118,55 @@ class LocalDatabase {
       'CREATE INDEX IF NOT EXISTS idx_error_telemetry_created_at '
       'ON error_telemetry(created_at)',
     );
+  }
+
+  /// Registro de notificações persistente compartilhado pelos isolates da UI e
+  /// do WorkManager. A reserva é atômica na transação SQLite: apenas um emissor
+  /// pode registrar um runId, mesmo durante consultas concorrentes.
+  Future<bool> claimBuildNotification(int runId) async {
+    final db = await database;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    return db.transaction((txn) async {
+      final existing = await txn.query(
+        'notification_events',
+        columns: ['event_key'],
+        where: 'event_key = ?',
+        whereArgs: ['build:$runId'],
+        limit: 1,
+      );
+      if (existing.isNotEmpty) return false;
+      await txn.insert('notification_events', {
+        'event_key': 'build:$runId',
+        'state': 'claimed',
+        'updated_at': now,
+      });
+      return true;
+    });
+  }
+
+  Future<void> markBuildNotification(int runId, String state) async {
+    final db = await database;
+    await db.update(
+      'notification_events',
+      {'state': state, 'updated_at': DateTime.now().millisecondsSinceEpoch},
+      where: 'event_key = ?',
+      whereArgs: ['build:$runId'],
+    );
+  }
+
+  /// Migra IDs da lista legada (até 250) sem notificar builds antigas outra vez.
+  Future<void> migrateLegacyBuildIds(Iterable<int> ids) async {
+    final db = await database;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await db.transaction((txn) async {
+      for (final id in ids) {
+        await txn.insert(
+          'notification_events',
+          {'event_key': 'build:$id', 'state': 'sent', 'updated_at': now},
+          conflictAlgorithm: ConflictAlgorithm.ignore,
+        );
+      }
+    });
   }
 
   Future<void> putJson(String key, Object value) async {

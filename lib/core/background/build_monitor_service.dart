@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flutter/widgets.dart';
 import 'package:github_manager/core/network/github_api_client.dart';
 import 'package:github_manager/core/notifications/app_notification_service.dart';
+import 'package:github_manager/core/notifications/notification_preferences.dart';
 import 'package:github_manager/core/persistence/local_database.dart';
 import 'package:github_manager/core/security/secure_storage_service.dart';
 import 'package:github_manager/core/telemetry/app_telemetry_service.dart';
@@ -14,9 +15,10 @@ import 'package:workmanager/workmanager.dart';
 const _buildMonitorTask = 'github_manager_build_monitor';
 const _buildMonitorUniqueName = 'github_manager_build_monitor_periodic';
 const _buildMonitorTag = 'github_manager_build_monitor_tag';
-const _enabledKey = 'settings.build_notifications';
 const _startedAtKey = 'notifications.build_monitor_started_at';
 const _notifiedRunsKey = 'notifications.notified_run_ids';
+const _migratedKey = 'notifications.ledger_migrated';
+const _maxNotificationAge = Duration(hours: 2);
 const _watchedRepositoriesKey = 'notifications.watched_repositories';
 
 @pragma('vm:entry-point')
@@ -55,59 +57,40 @@ class BuildMonitorService {
   }
 
   static Future<void> ensureDefaultEnabled() async {
-    final stored = await _database.readJson(_enabledKey);
-    if (stored == false) {
+    // Preferências opcionais são opt-in. Instalações antigas deixam de receber
+    // avisos por padrão até o usuário escolher o que deseja em Configurações.
+    await refreshConfiguration();
+  }
+
+  static Future<bool> isEnabled() async =>
+      (await NotificationPreferences.read()).watchBuilds;
+
+  /// Mantido para pontos de integração legados: só altera categorias de build.
+  static Future<bool> setEnabled(bool enabled) async {
+    final old = await NotificationPreferences.read();
+    if (enabled && !await requestPermission()) return false;
+    await NotificationPreferences.save(old.copyWith(
+      enabled: enabled ? true : old.enabled,
+      buildSuccess: enabled,
+      buildProblems: enabled,
+    ));
+    await refreshConfiguration();
+    return enabled;
+  }
+
+  static Future<void> refreshConfiguration() async {
+    final policy = await NotificationPreferences.read();
+    if (!policy.watchBuilds) {
       await Workmanager().cancelByUniqueName(_buildMonitorUniqueName);
       _stopFastPolling();
+      if (!policy.enabled) {
+        await AppNotificationService.cancelAllOptional();
+      }
       return;
     }
-
-    if (stored == null) {
-      await _database.putJson(_enabledKey, true);
-      await _database.putJson(
-        _startedAtKey,
-        DateTime.now().millisecondsSinceEpoch,
-      );
-    }
-
-    final allowed = await requestPermission();
-    if (allowed) {
-      await _register();
-      _startFastPolling();
-    } else {
-      await _database.putJson(_enabledKey, false);
-      await Workmanager().cancelByUniqueName(_buildMonitorUniqueName);
-      _stopFastPolling();
-    }
-  }
-
-  static Future<bool> isEnabled() async {
-    final stored = await _database.readJson(_enabledKey);
-    return stored != false;
-  }
-
-  static Future<bool> setEnabled(bool enabled) async {
-    if (!enabled) {
-      await _database.putJson(_enabledKey, false);
-      await Workmanager().cancelByUniqueName(_buildMonitorUniqueName);
-      _stopFastPolling();
-      return false;
-    }
-
-    final allowed = await requestPermission();
-    if (!allowed) {
-      await _database.putJson(_enabledKey, false);
-      return false;
-    }
-
-    await _database.putJson(_enabledKey, true);
-    await _database.putJson(
-      _startedAtKey,
-      DateTime.now().millisecondsSinceEpoch,
-    );
+    await _database.putJson(_startedAtKey, DateTime.now().millisecondsSinceEpoch);
     await _register();
     _startFastPolling();
-    return true;
   }
 
   static Future<bool> requestPermission() =>
@@ -145,9 +128,8 @@ class BuildMonitorService {
 
   static Future<bool> runBackgroundCheck({int maxRepositories = 30}) async {
     final database = _database;
-    if (await database.readJson(_enabledKey) == false) {
-      return true;
-    }
+    final preferences = await NotificationPreferences.read(database: database);
+    if (!preferences.watchBuilds) return true;
 
     final startedRaw = await database.readJson(_startedAtKey);
     final startedAt = startedRaw is int
@@ -157,26 +139,27 @@ class BuildMonitorService {
       await database.putJson(_startedAtKey, startedAt);
     }
 
-    final notifiedRaw = await database.readJson(_notifiedRunsKey);
-    final notified = <int>{
-      if (notifiedRaw is List)
-        ...notifiedRaw.whereType<num>().map((value) => value.toInt()),
-    };
+    // Protege usuários de versões anteriores: jamais republicar uma build que
+    // já foi registrada na lista legada, ainda que o monitor reinicie.
+    if (await database.readJson(_migratedKey) != true) {
+      final legacy = await database.readJson(_notifiedRunsKey);
+      if (legacy is List) {
+        await database.migrateLegacyBuildIds(
+          legacy.whereType<num>().map((v) => v.toInt()),
+        );
+      }
+      await database.putJson(_migratedKey, true);
+    }
 
     final secureStorage = SecureStorageService();
-    if (!await secureStorage.hasGitHubToken()) {
-      return true;
-    }
+    if (!await secureStorage.hasGitHubToken()) return true;
 
     final client = GitHubApiClient(secureStorage);
     final repositoryService = RepositoryService(client, database);
     final repositories = await repositoryService.listRepositories();
     final watchedRaw = await database.readJson(_watchedRepositoriesKey);
     final watched = watchedRaw is List
-        ? watchedRaw
-            .whereType<String>()
-            .map((item) => item.toLowerCase())
-            .toList()
+        ? watchedRaw.whereType<String>().map((item) => item.toLowerCase()).toList()
         : const <String>[];
     final byName = {
       for (final repository in repositories)
@@ -189,50 +172,43 @@ class BuildMonitorService {
         (repository) => !watched.contains(repository.fullName.toLowerCase()),
       ),
     ];
+    final earliest = DateTime.now().subtract(_maxNotificationAge);
 
     for (final repository in ordered.take(maxRepositories)) {
+      if (!(await NotificationPreferences.read(database: database)).watchBuilds) break;
       try {
         final response = await client.get<Map<String, dynamic>>(
           '/repos/${repository.fullName}/actions/runs',
-          queryParameters: const {
-            'per_page': 10,
-            'page': 1,
-          },
+          queryParameters: const {'per_page': 10, 'page': 1},
         );
         final rawRuns = response.data?['workflow_runs'];
-        if (rawRuns is! List) {
-          continue;
-        }
+        if (rawRuns is! List) continue;
 
         for (final raw in rawRuns.whereType<Map>()) {
           final run = Map<String, dynamic>.from(raw);
           final id = (run['id'] as num?)?.toInt();
-          if (id == null || notified.contains(id)) {
-            continue;
-          }
-
-          final createdAt = DateTime.tryParse(
-            run['created_at'] as String? ?? '',
-          );
-          if (createdAt == null ||
-              createdAt.millisecondsSinceEpoch < startedAt) {
-            continue;
-          }
-
-          if (run['status'] != 'completed') {
-            continue;
-          }
-
+          if (id == null || run['status'] != 'completed') continue;
           final conclusion = run['conclusion'] as String? ?? '';
           if (!const {
-            'success',
-            'failure',
-            'cancelled',
-            'timed_out',
-            'action_required',
-          }.contains(conclusion)) {
-            continue;
-          }
+            'success', 'failure', 'cancelled', 'timed_out', 'action_required',
+          }.contains(conclusion)) continue;
+
+          // `updated_at` representa o último estado da execução concluída.
+          // Evita notificações de eventos antigos ao reconectar ou atualizar.
+          final eventAt = DateTime.tryParse(
+            (run['updated_at'] ?? run['created_at']) as String? ?? '',
+          );
+          final createdAt = DateTime.tryParse(run['created_at'] as String? ?? '');
+          if (eventAt == null || createdAt == null ||
+              eventAt.isBefore(earliest) ||
+              createdAt.millisecondsSinceEpoch < startedAt) continue;
+
+          final current = await NotificationPreferences.read(database: database);
+          if (!current.acceptsBuild(conclusion)) continue;
+
+          // Reserva atômica ANTES do aviso: primeiro plano e WorkManager usam
+          // a mesma tabela SQLite, sem janela de repetição entre isolates.
+          if (!await database.claimBuildNotification(id)) continue;
 
           final workflowName =
               (run['name'] as String?)?.trim().isNotEmpty == true
@@ -248,17 +224,12 @@ class BuildMonitorService {
             conclusion: conclusion,
             branch: run['head_branch'] as String?,
           );
-          notified.add(id);
+          await database.markBuildNotification(id, 'sent');
         }
       } catch (_) {
         // Um repositório sem Actions/permissão não bloqueia os demais.
       }
     }
-
-    final recent = notified.toList(growable: false);
-    final trimmed =
-        recent.length <= 250 ? recent : recent.sublist(recent.length - 250);
-    await database.putJson(_notifiedRunsKey, trimmed);
     return true;
   }
 

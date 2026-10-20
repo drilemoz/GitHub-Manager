@@ -2,6 +2,7 @@ package br.com.githubmanager.app
 
 import android.Manifest
 import android.app.ActivityManager
+import android.app.NotificationManager
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
@@ -227,6 +228,27 @@ class MainActivity : FlutterActivity() {
                     result.success(
                         GitHubManagerApplication.consumePendingEngineLifecycle(applicationContext),
                     )
+                }
+                "clearOptionalNotifications" -> {
+                    try {
+                        // Não chamar cancelAll(): isso removeria também a
+                        // notificação dos serviços foreground de transferências.
+                        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            val optionalChannels = setOf(
+                                "github_build_success", "github_build_alerts",
+                                "github_download_completed", "github_download_failures",
+                            )
+                            manager.activeNotifications.forEach { active ->
+                                if (active.notification.channelId in optionalChannels) {
+                                    manager.cancel(active.tag, active.id)
+                                }
+                            }
+                        }
+                        result.success(null)
+                    } catch (error: Exception) {
+                        result.error("NOTIFICATION_CLEANUP_FAILED", error.message, null)
+                    }
                 }
                 "getInstalledAppInfo" -> {
                     val packageName = call.argument<String>("packageName").orEmpty()

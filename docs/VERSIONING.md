@@ -1,3 +1,7 @@
+### 2.0.136
+
+A versão canônica é `version: 2.0.136+200150` (versionName 2.0.136; Android versionCode 200150). Corrige alertas repetidos de builds com ledger SQLite e adiciona Configurações → Notificações com chave geral e categorias de builds/downloads. Consulte `docs/RELEASE_2.0.136.md`.
+
 ### 2.0.135
 
 A versão canônica é `version: 2.0.135+200149` (versionName 2.0.135; Android versionCode 200149). Adiciona suporte a `STATUS.json` e corrige as duas falhas de testes do workflow Android APK #124, com regressões. Consulte `docs/RELEASE_2.0.135.md`.

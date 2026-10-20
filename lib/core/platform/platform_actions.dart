@@ -239,6 +239,11 @@ abstract final class PlatformActions {
   static Future<String?> consumeNativeEngineLifecycleReport() =>
       _channel.invokeMethod<String>('consumeNativeEngineLifecycleReport');
 
+  /// Cancela apenas canais de avisos opcionais, preservando notificações
+  /// foreground de uploads/downloads ativos que mantêm seus serviços vivos.
+  static Future<void> clearOptionalNotifications() =>
+      _channel.invokeMethod<void>('clearOptionalNotifications');
+
   static Future<AndroidDeviceInfo> getAndroidDeviceInfo() async {
     final raw = await _channel.invokeMapMethod<String, Object?>('getDeviceInfo');
     if (raw == null) {

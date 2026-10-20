@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:github_manager/app/theme/app_theme_controller.dart';
 import 'package:github_manager/core/background/build_monitor_service.dart';
+import 'package:github_manager/core/notifications/notification_preferences.dart';
+import 'package:github_manager/core/notifications/app_notification_service.dart';
 import 'package:github_manager/core/errors/app_exception.dart';
 import 'package:github_manager/core/providers/core_providers.dart';
 import 'package:github_manager/core/platform/platform_actions.dart';
@@ -117,18 +119,76 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
           const SizedBox(height: 18),
           const _SectionTitle('Notificações'),
           Card(
-            child: SwitchListTile(
-              secondary: const Icon(Icons.notifications_active_outlined),
-              title: const Text('Avisar quando builds terminarem'),
-              subtitle: const Text(
-                'Enquanto o aplicativo está ativo, verifica builds recentes em intervalos curtos. '
-                'Em segundo plano, o Android controla a frequência mínima das verificações. '
-                'Toque no aviso para abrir a execução correspondente. Falhas têm prioridade sobre sucessos.',
-              ),
-              value: _buildNotificationsEnabled ?? true,
-              onChanged: _buildNotificationsEnabled == null
-                  ? null
-                  : _setBuildNotifications,
+            child: Column(
+              children: [
+                SwitchListTile(
+                  secondary: const Icon(Icons.notifications_active_outlined),
+                  title: const Text('Permitir avisos opcionais'),
+                  subtitle: const Text(
+                    'Desligado por padrão. Ative apenas se quiser receber alertas de builds ou downloads.',
+                  ),
+                  value: _notificationPreferences?.enabled ?? false,
+                  onChanged: _notificationPreferences == null || _savingNotifications
+                      ? null
+                      : (enabled) => _setNotificationPreferences(
+                            _notificationPreferences!.copyWith(enabled: enabled),
+                          ),
+                ),
+                const Divider(height: 1),
+                SwitchListTile(
+                  secondary: const Icon(Icons.check_circle_outline_rounded),
+                  title: const Text('Build concluída com sucesso'),
+                  subtitle: const Text('Receber aviso quando o GitHub Actions concluir sem erros.'),
+                  value: _notificationPreferences?.buildSuccess ?? false,
+                  onChanged: _canChangeNotificationCategories
+                      ? (value) => _setNotificationPreferences(
+                            _notificationPreferences!.copyWith(buildSuccess: value),
+                          )
+                      : null,
+                ),
+                const Divider(height: 1),
+                SwitchListTile(
+                  secondary: const Icon(Icons.error_outline_rounded),
+                  title: const Text('Falhas ou problemas nas builds'),
+                  subtitle: const Text('Inclui falha, cancelamento e execução que exige atenção.'),
+                  value: _notificationPreferences?.buildProblems ?? false,
+                  onChanged: _canChangeNotificationCategories
+                      ? (value) => _setNotificationPreferences(
+                            _notificationPreferences!.copyWith(buildProblems: value),
+                          )
+                      : null,
+                ),
+                const Divider(height: 1),
+                SwitchListTile(
+                  secondary: const Icon(Icons.file_download_done_outlined),
+                  title: const Text('Downloads concluídos'),
+                  subtitle: const Text('Avisar quando APKs, ZIPs ou logs terminarem de baixar.'),
+                  value: _notificationPreferences?.downloadSuccess ?? false,
+                  onChanged: _canChangeNotificationCategories
+                      ? (value) => _setNotificationPreferences(
+                            _notificationPreferences!.copyWith(downloadSuccess: value),
+                          )
+                      : null,
+                ),
+                const Divider(height: 1),
+                SwitchListTile(
+                  secondary: const Icon(Icons.download_for_offline_outlined),
+                  title: const Text('Falhas de downloads'),
+                  subtitle: const Text('Avisar quando houver falha na transferência.'),
+                  value: _notificationPreferences?.downloadProblems ?? false,
+                  onChanged: _canChangeNotificationCategories
+                      ? (value) => _setNotificationPreferences(
+                            _notificationPreferences!.copyWith(downloadProblems: value),
+                          )
+                      : null,
+                ),
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(16, 4, 16, 14),
+                  child: Text(
+                    'Avisos antigos são retirados ao desativar. As notificações de progresso de envios/downloads ativos podem permanecer: são usadas pelos serviços Android em primeiro plano, e desaparecem ao concluir ou interromper a transferência.',
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 18),
@@ -312,16 +372,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                   children: const [
                     _ChangeNote(
+                      version: '2.0.136',
+                      text: 'Notificações por categoria, desligadas por padrão, com deduplicação SQLite e bloqueio de alertas antigos.',
+                    ),
+                    _ChangeNote(
                       version: '2.0.135',
                       text: 'Reconhece STATUS.json do Termux Manager, corrige a leitura de caminhos GitHub e resolve dois testes do Android APK #124.',
                     ),
                     _ChangeNote(
                       version: '2.0.134',
                       text: 'Corrige a versão canônica do workflow Android APK #123 e restaura o histórico documental com teste de regressão.',
-                    ),
-                    _ChangeNote(
-                      version: '2.0.133',
-                      text: 'Melhora a detecção de app instalado, redesenha o card APK e mostra versão/SDK no topo do projeto.',
                     ),
                   ],
                 ),

@@ -3,7 +3,10 @@ part of 'settings_screen.dart';
 mixin _SettingsScreenActions on ConsumerState<SettingsScreen> {
   late ThemeMode _themeMode;
   Map<String, String>? _apiSettings;
-  bool? _buildNotificationsEnabled;
+  NotificationPreferences? _notificationPreferences;
+  bool _savingNotifications = false;
+  bool get _canChangeNotificationCategories =>
+      _notificationPreferences?.enabled == true && !_savingNotifications;
   bool? _automaticUploadRecoveryEnabled;
   DownloadCleanupMode? _downloadCleanupMode;
   bool _updatingFullScreen = false;
@@ -95,9 +98,15 @@ mixin _SettingsScreenActions on ConsumerState<SettingsScreen> {
   }
 
   Future<void> _loadNotificationSettings() async {
-    final enabled = await BuildMonitorService.isEnabled();
-    if (mounted) {
-      setState(() => _buildNotificationsEnabled = enabled);
+    try {
+      final preferences = await NotificationPreferences.read(
+        database: ref.read(localDatabaseProvider),
+      );
+      if (mounted) setState(() => _notificationPreferences = preferences);
+    } catch (_) {
+      if (mounted) {
+        setState(() => _notificationPreferences = const NotificationPreferences());
+      }
     }
   }
 
@@ -177,15 +186,48 @@ mixin _SettingsScreenActions on ConsumerState<SettingsScreen> {
     );
   }
 
-  Future<void> _setBuildNotifications(bool enabled) async {
-    final resolved = await BuildMonitorService.setEnabled(enabled);
-    if (!mounted) return;
-    setState(() => _buildNotificationsEnabled = resolved);
-    showCenteredNotice(context, resolved
-              ? 'Avisos de build ativados.'
-              : enabled
-                  ? 'Permissão de notificações não concedida.'
-                  : 'Avisos de build desativados.');
+  Future<void> _setNotificationPreferences(NotificationPreferences next) async {
+    if (_savingNotifications) return;
+    setState(() => _savingNotifications = true);
+    try {
+      if (next.enabled && _notificationPreferences?.enabled != true &&
+          !await BuildMonitorService.requestPermission()) {
+        if (mounted) {
+          showCenteredNotice(
+            context,
+            'O Android não concedeu a permissão para notificações.',
+            kind: CenteredNoticeKind.error,
+          );
+        }
+        return;
+      }
+      await NotificationPreferences.save(
+        next,
+        database: ref.read(localDatabaseProvider),
+      );
+      if (!next.enabled) {
+        await AppNotificationService.cancelAllOptional();
+      }
+      await BuildMonitorService.refreshConfiguration();
+      if (mounted) {
+        setState(() => _notificationPreferences = next);
+        showCenteredNotice(
+          context,
+          next.enabled ? 'Preferências de notificação salvas.' : 'Avisos opcionais desligados.',
+          kind: CenteredNoticeKind.success,
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        showCenteredNotice(
+          context,
+          'Não foi possível salvar as preferências de notificação.',
+          kind: CenteredNoticeKind.error,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _savingNotifications = false);
+    }
   }
 
   Future<void> _setTheme(ThemeMode mode) async {

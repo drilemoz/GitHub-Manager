@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/services.dart';
 import 'package:github_manager/app/router/app_router.dart';
 import 'package:github_manager/core/notifications/app_notification_service.dart';
 import 'package:github_manager/core/notifications/notification_destination.dart';
+import 'package:github_manager/core/persistence/local_database.dart';
 import 'package:github_manager/features/update/application/startup_update_coordinator.dart';
 
 /// Ponte para notificações locais e para os serviços foreground nativos.
@@ -55,6 +58,15 @@ abstract final class NotificationNavigationService {
     _lastRoute = destination.route;
     _lastOpenAt = now;
     StartupUpdateCoordinator.instance.suppressAutomaticForNotification();
+    // Abertura por toque: guarda como lida e retira o aviso local. Mesmo se o
+    // usuário o dispensar pelo sistema, a reserva persistente impede repetição.
+    final uri = Uri.tryParse(destination.route);
+    final runId = int.tryParse(uri?.queryParameters['runId'] ?? '');
+    if (runId != null && uri!.pathSegments.contains('builds')) {
+      unawaited(LocalDatabase.shared.markBuildNotification(runId, 'opened')
+          .catchError((Object _) {}));
+      unawaited(AppNotificationService.cancelBuild(runId));
+    }
     appRouter.go(destination.route);
   }
 }

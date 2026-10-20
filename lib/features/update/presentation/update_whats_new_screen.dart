@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class UpdateWhatsNewScreen extends StatelessWidget {
-  static const releaseNotesVersion = '2.0.135';
+  static const releaseNotesVersion = '2.0.136';
 
   const UpdateWhatsNewScreen({
     required this.versionLabel,
@@ -69,21 +69,21 @@ class UpdateWhatsNewScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 24),
                     const _UpdateItem(
-                      icon: Icons.folder_zip_outlined,
-                      title: 'Termux Manager reconhecido',
-                      description: 'Conferir envio de ZIP agora identifica a versão do projeto em STATUS.json e separa a integração das versões internas do manager e do APK.',
+                      icon: Icons.notifications_off_outlined,
+                      title: 'Avisos opcionais sob seu controle',
+                      description: 'As notificações opcionais começam desligadas. Em Configurações, escolha avisos de conclusão ou falha para builds e downloads.',
                     ),
                     const SizedBox(height: 12),
                     const _UpdateItem(
-                      icon: Icons.sync_rounded,
-                      title: 'Metadados do GitHub corrigidos',
-                      description: 'A leitura respeita maiúsculas e minúsculas dos arquivos, como STATUS.json e MANIFEST.json, nos resumos e detalhes do repositório.',
+                      icon: Icons.shield_outlined,
+                      title: 'Sem notificações repetidas de builds',
+                      description: 'Registro persistente coordena monitor ativo e WorkManager; eventos antigos ou já registrados deixam de disparar novamente.',
                     ),
                     const SizedBox(height: 12),
                     const _UpdateItem(
-                      icon: Icons.verified_user_outlined,
-                      title: 'Correções no Android APK #124',
-                      description: 'Card APK alinhado ao padrão visual e detecção de pacotes protegida contra falsos avisos de aplicativo não instalado quando há visibilidade limitada.',
+                      icon: Icons.tune_rounded,
+                      title: 'Silenciar com segurança',
+                      description: 'Desligar avisos remove notificações opcionais antigas. O progresso das transferências ativas continua protegido pelo serviço Android.',
                     ),
                   ],
                 ),

@@ -1,5 +1,7 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:github_manager/core/notifications/notification_destination.dart';
+import 'package:github_manager/core/notifications/notification_preferences.dart';
+import 'package:github_manager/core/platform/platform_actions.dart';
 
 abstract final class AppNotificationService {
   static final FlutterLocalNotificationsPlugin _notifications =
@@ -50,6 +52,21 @@ abstract final class AppNotificationService {
     }
   }
 
+  /// Remove apenas avisos locais opcionais, sem encerrar serviços Android
+  /// foreground que sustentam transferências em andamento.
+  static Future<void> cancelAllOptional() async {
+    try {
+      await PlatformActions.clearOptionalNotifications();
+    } catch (_) {}
+  }
+
+  static Future<void> cancelBuild(int id) async {
+    try {
+      await initialize();
+      await _notifications.cancel(id: id & 0x7fffffff);
+    } catch (_) {}
+  }
+
   static Future<void> showBuildResult({
     required int id,
     required String repository,
@@ -59,6 +76,11 @@ abstract final class AppNotificationService {
     String? version,
     String? branch,
   }) async {
+    try {
+      if (!(await NotificationPreferences.read()).acceptsBuild(conclusion)) return;
+    } catch (_) {
+      return;
+    }
     await initialize();
     final (title, status) = switch (conclusion) {
       'success' => ('Build concluída ✓', 'concluída com sucesso'),
@@ -107,6 +129,11 @@ abstract final class AppNotificationService {
     required String fileName,
     required String repository,
   }) async {
+    try {
+      if (!(await NotificationPreferences.read()).notifyDownloaded) return;
+    } catch (_) {
+      return;
+    }
     await initialize();
     const details = NotificationDetails(
       android: AndroidNotificationDetails(
@@ -138,6 +165,11 @@ abstract final class AppNotificationService {
     required String fileName,
     required String message,
   }) async {
+    try {
+      if (!(await NotificationPreferences.read()).notifyDownloadError) return;
+    } catch (_) {
+      return;
+    }
     await initialize();
     const details = NotificationDetails(
       android: AndroidNotificationDetails(
