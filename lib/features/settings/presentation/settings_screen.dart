@@ -372,16 +372,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                   children: const [
                     _ChangeNote(
+                      version: '2.0.137',
+                      text: 'Busca AAB no botão Play, com download direto de Release ou extração validada do Artifact ZIP.',
+                    ),
+                    _ChangeNote(
                       version: '2.0.136',
                       text: 'Notificações por categoria, desligadas por padrão, com deduplicação SQLite e bloqueio de alertas antigos.',
                     ),
                     _ChangeNote(
                       version: '2.0.135',
                       text: 'Reconhece STATUS.json do Termux Manager, corrige a leitura de caminhos GitHub e resolve dois testes do Android APK #124.',
-                    ),
-                    _ChangeNote(
-                      version: '2.0.134',
-                      text: 'Corrige a versão canônica do workflow Android APK #123 e restaura o histórico documental com teste de regressão.',
                     ),
                   ],
                 ),

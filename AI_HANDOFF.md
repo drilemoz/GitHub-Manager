@@ -1,3 +1,10 @@
+# GitHub Manager 2.0.137+200151
+
+- Novo `PlayAabDiscoveryService` com consultas de Release + Artifact independentes; seleção heurística testada no domínio `play_aab_discovery.dart`.
+- Novo botão Baixar AAB dentro de Play (`play_readiness_dialog.dart`), sem alterar o atalho APK existente. Releases vão para startReleaseAsset; Artifacts para startArtifactAab.
+- `DownloadManagerService` faz extração por streaming do .aab de ZIP, confirma estrutura App Bundle ou rejeita; inclui retomada de downloads de Artifact AAB usando filename `.aab` e artifactId.
+- Validar em CI e telefone, especialmente ZIP do Actions v4/v7 e bundle archive:false, e possíveis valores de data/versão na UI.
+
 # GitHub Manager 2.0.136+200150
 
 - Novas preferências opt-in em `lib/core/notifications/notification_preferences.dart` para avisos opcionais de conclusão/falha em builds/downloads. **Desligadas por padrão** mesmo após atualização, preservando preferências antigas apenas nos flags de builds.

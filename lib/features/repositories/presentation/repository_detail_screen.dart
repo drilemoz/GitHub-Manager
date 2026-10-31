@@ -36,6 +36,7 @@ import 'package:github_manager/features/repositories/presentation/repository_apk
 import 'package:github_manager/features/repositories/presentation/technology_badge.dart';
 import 'package:github_manager/features/repositories/presentation/play_readiness_dialog.dart';
 import 'package:github_manager/features/repositories/data/play_readiness_service.dart';
+import 'package:github_manager/features/repositories/data/play_aab_discovery_service.dart';
 import 'package:github_manager/features/uploads/domain/managed_upload.dart';
 import 'package:github_manager/features/uploads/presentation/upload_center_button.dart';
 import 'package:github_manager/features/uploads/presentation/upload_progress_dialog.dart';
@@ -228,6 +229,11 @@ class _RepositoryDetailScreenState extends ConsumerState<RepositoryDetailScreen>
                               service: PlayReadinessService(
                                 ref.read(githubApiClientProvider),
                               ),
+                              aabService: PlayAabDiscoveryService(
+                                ref.read(artifactServiceProvider),
+                                ref.read(githubApiClientProvider),
+                              ),
+                              downloads: ref.read(downloadManagerProvider),
                             ),
                           ),
                         ),

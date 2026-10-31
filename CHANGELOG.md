@@ -1,3 +1,11 @@
+## 2.0.137+200151 — 2026-10-31
+
+- Integra no botão Play a pesquisa automática de AABs publicados em Releases e de Artifacts candidatos, mantendo a auditoria anterior.
+- Acrescenta origem, tag/versão, data, run ID e indicação de nível de confiança. Prioriza builds com sucesso confirmado ou arquivos AAB diretos e evita alegar busca completa se a API falhou.
+- Inclui botão Baixar AAB via Central de Downloads e Copiar informações. Releases usam download direto; Artifacts usam ZIP com extração e inspeção da estrutura de App Bundle (BundleConfig.pb e manifesto base).
+- Mantém pause/resume, gestão dos arquivos parciais, limpeza por projeto e diferenciação entre APK instalável e AAB não instalável.
+- Acrescenta regressões de busca, seleção, filtros e integração; sincroniza versionamento e documentos. Flutter/Android build pendente de CI.
+
 ## 2.0.136+200150 — 2026-10-20
 
 - Notificações opcionais opt-in: chave geral e quatro categorias persistidas em Configurações, separando sucesso/falha de builds e downloads.

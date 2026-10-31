@@ -1,3 +1,7 @@
+### 2.0.137
+
+A versão canônica é `version: 2.0.137+200151` (versionName 2.0.137; Android versionCode 200151). Acrescenta busca e download seguro de Android App Bundle (AAB) em Play, tanto em Releases quanto em Artifacts ZIP, com auditoria preservada. Consulte `docs/RELEASE_2.0.137.md`.
+
 ### 2.0.136
 
 A versão canônica é `version: 2.0.136+200150` (versionName 2.0.136; Android versionCode 200150). Corrige alertas repetidos de builds com ledger SQLite e adiciona Configurações → Notificações com chave geral e categorias de builds/downloads. Consulte `docs/RELEASE_2.0.136.md`.

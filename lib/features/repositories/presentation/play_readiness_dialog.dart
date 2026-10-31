@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:github_manager/core/platform/platform_actions.dart';
+import 'package:github_manager/features/downloads/data/download_manager_service.dart';
+import 'package:github_manager/features/builds/domain/action_artifact.dart';
+import 'package:github_manager/features/repositories/data/play_aab_discovery_service.dart';
+import 'package:github_manager/features/repositories/domain/play_aab_discovery.dart';
 import 'package:github_manager/features/repositories/data/play_readiness_service.dart';
 import 'package:github_manager/features/repositories/domain/github_repository.dart';
 import 'package:github_manager/features/repositories/domain/play_readiness_report.dart';
@@ -9,21 +13,32 @@ Future<void> showPlayReadinessDialog({
   required BuildContext context,
   required GitHubRepository repository,
   required PlayReadinessService service,
+  required PlayAabDiscoveryService aabService,
+  required DownloadManagerService downloads,
 }) async {
   await showDialog<void>(
     context: context,
     builder: (context) => _PlayReadinessDialog(
       repository: repository,
       service: service,
+      aabService: aabService,
+      downloads: downloads,
     ),
   );
 }
 
 class _PlayReadinessDialog extends StatefulWidget {
-  const _PlayReadinessDialog({required this.repository, required this.service});
+  const _PlayReadinessDialog({
+    required this.repository,
+    required this.service,
+    required this.aabService,
+    required this.downloads,
+  });
 
   final GitHubRepository repository;
   final PlayReadinessService service;
+  final PlayAabDiscoveryService aabService;
+  final DownloadManagerService downloads;
 
   @override
   State<_PlayReadinessDialog> createState() => _PlayReadinessDialogState();
@@ -31,6 +46,8 @@ class _PlayReadinessDialog extends StatefulWidget {
 
 class _PlayReadinessDialogState extends State<_PlayReadinessDialog> {
   late Future<PlayReadinessReport> _future;
+  late Future<PlayAabDiscoveryResult> _aabFuture;
+  final Set<String> _startedAabDownloads = <String>{};
   bool _copying = false;
   int _revision = 0;
   String? _copyFeedback;
@@ -46,6 +63,8 @@ class _PlayReadinessDialogState extends State<_PlayReadinessDialog> {
     _copying = false;
     _copyFeedback = null;
     _future = widget.service.inspect(widget.repository);
+    _aabFuture = widget.aabService.search(widget.repository.fullName);
+    _startedAabDownloads.clear();
   }
 
   Future<void> _copyReport(PlayReadinessReport report) async {
@@ -67,6 +86,91 @@ class _PlayReadinessDialogState extends State<_PlayReadinessDialog> {
     } finally {
       if (mounted && revision == _revision) setState(() => _copying = false);
     }
+  }
+
+  String _aabKey(PlayAabCandidate candidate) =>
+      '${candidate.origin.name}:${candidate.id}';
+
+  void _downloadAab(PlayAabCandidate candidate) {
+    final key = _aabKey(candidate);
+    if (_startedAabDownloads.contains(key)) return;
+    try {
+      if (candidate.origin == PlayAabOrigin.release) {
+        widget.downloads.startReleaseAsset(
+          title: 'Google Play • ${candidate.name}',
+          fileName: candidate.name,
+          repositoryFullName: widget.repository.fullName,
+          assetId: candidate.id,
+          isApk: false,
+        );
+      } else {
+        widget.downloads.startArtifactAab(
+          repositoryFullName: widget.repository.fullName,
+          artifact: ActionArtifact(
+            id: candidate.id,
+            name: candidate.name,
+            sizeBytes: candidate.sizeBytes,
+            expired: false,
+            createdAt: candidate.date,
+            workflowRunId: candidate.runId,
+          ),
+        );
+      }
+      setState(() {
+        _startedAabDownloads.add(key);
+        _copyFeedback = 'Download iniciado. Acompanhe pela Central de Downloads.';
+      });
+    } catch (_) {
+      setState(() => _copyFeedback = 'Não foi possível iniciar o download do AAB.');
+    }
+  }
+
+  Future<void> _copyAabInfo(PlayAabCandidate candidate) async {
+    try {
+      await Clipboard.setData(ClipboardData(text: [
+        'AAB para Google Play',
+        'Repositório: ${widget.repository.fullName}',
+        'Arquivo/candidato: ${candidate.name}',
+        'Origem: ${candidate.sourceLabel}',
+        'Identificação: ${candidate.confidenceLabel}',
+        if (candidate.version != null) 'Versão/tag: ${candidate.version}',
+        if (candidate.runId != null) 'Workflow run: ${candidate.runId}',
+        if (candidate.date != null) 'Data: ${candidate.date!.toLocal().toIso8601String()}',
+        'AAB não é instalável diretamente no Android.',
+      ].join('\n')));
+      if (mounted) setState(() => _copyFeedback = 'Informações do AAB copiadas.');
+    } catch (_) {
+      if (mounted) setState(() => _copyFeedback = 'Falha ao copiar informações do AAB.');
+    }
+  }
+
+  Widget _buildAabLookup() {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Android App Bundle (AAB)',
+            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+        const SizedBox(height: 7),
+        FutureBuilder<PlayAabDiscoveryResult>(
+          future: _aabFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState != ConnectionState.done) {
+              return const _AuditMessage('Buscando AABs em Releases e Artifacts…');
+            }
+            if (snapshot.hasError || !snapshot.hasData) {
+              return const _AuditMessage('Não foi possível buscar os AABs. Toque em Reavaliar para tentar novamente.');
+            }
+            return _PlayAabDiscoverySection(
+              result: snapshot.data!,
+              startedKeys: _startedAabDownloads,
+              onDownload: _downloadAab,
+              onCopy: _copyAabInfo,
+            );
+          },
+        ),
+      ],
+    );
   }
 
   @override
@@ -124,25 +228,29 @@ class _PlayReadinessDialogState extends State<_PlayReadinessDialog> {
                 future: _future,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState != ConnectionState.done) {
-                    return const Padding(
-                      padding: EdgeInsets.all(24),
+                    return SingleChildScrollView(
+                      padding: const EdgeInsets.all(14),
                       child: Column(
-                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          CircularProgressIndicator(),
-                          SizedBox(height: 12),
-                          Text('Verificando arquivos do repositório…'),
+                          _buildAabLookup(),
+                          const SizedBox(height: 16),
+                          const _AuditMessage('Verificando arquivos do repositório para auditoria…'),
+                          const SizedBox(height: 8),
+                          const LinearProgressIndicator(minHeight: 3),
                         ],
                       ),
                     );
                   }
                   if (snapshot.hasError || !snapshot.hasData) {
-                    return Padding(
+                    return SingleChildScrollView(
                       padding: const EdgeInsets.all(16),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          _buildAabLookup(),
+                          const Divider(height: 22),
                           const Text('Não foi possível consultar o código do projeto.'),
                           const SizedBox(height: 5),
                           const Text('Verifique rede, permissões, branch e limites da API. Nenhum resultado foi presumido.'),
@@ -162,6 +270,13 @@ class _PlayReadinessDialogState extends State<_PlayReadinessDialog> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        _buildAabLookup(),
+                        const Divider(height: 25),
+                        Text('Auditoria de publicação',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            )),
+                        const SizedBox(height: 7),
                         Text('Branch: ${report.branch}', style: theme.textTheme.bodySmall),
                         const SizedBox(height: 7),
                         if (!report.androidProject) ...[
@@ -256,6 +371,114 @@ class _PlayReadinessDialogState extends State<_PlayReadinessDialog> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _PlayAabDiscoverySection extends StatelessWidget {
+  const _PlayAabDiscoverySection({
+    required this.result,
+    required this.startedKeys,
+    required this.onDownload,
+    required this.onCopy,
+  });
+
+  final PlayAabDiscoveryResult result;
+  final Set<String> startedKeys;
+  final void Function(PlayAabCandidate) onDownload;
+  final Future<void> Function(PlayAabCandidate) onCopy;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    if (!result.hasCandidates) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(result.complete
+              ? 'AAB não encontrado nos Releases nem nos Artifacts pesquisados.'
+              : 'AAB não localizado nas fontes consultadas. A busca foi parcial.'),
+          const SizedBox(height: 5),
+          const _AuditMessage('Artifacts com nomes genéricos podem conter um AAB, mas o GitHub não informa os arquivos internos na listagem. Confira a tela Artifacts.'),
+          for (final warning in result.warnings) _AuditMessage(warning),
+        ],
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('${result.candidates.length} resultado(s) • Releases e Artifacts',
+            style: Theme.of(context).textTheme.bodySmall),
+        const SizedBox(height: 7),
+        for (final candidate in result.candidates.take(5)) ...[
+          Container(
+            padding: const EdgeInsets.all(11),
+            decoration: BoxDecoration(
+              color: scheme.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: scheme.outlineVariant.withValues(alpha: .45)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(candidate.directlyConfirmed
+                        ? Icons.inventory_2_outlined
+                        : Icons.archive_outlined,
+                        size: 19, color: scheme.primary),
+                    const SizedBox(width: 7),
+                    Expanded(
+                      child: Text(candidate.name,
+                          maxLines: 2, overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          )),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text('${candidate.sourceLabel}${candidate.version == null ? '' : ' • ${candidate.version}'}'
+                    '${candidate.runId == null ? '' : ' • Build #${candidate.runId}'}',
+                    style: Theme.of(context).textTheme.bodySmall),
+                if (candidate.date != null)
+                  Text('Publicado: ${candidate.date!.toLocal().toIso8601String().replaceFirst('T', ' ').substring(0, 16)}',
+                      style: Theme.of(context).textTheme.bodySmall),
+                Text(candidate.confidenceLabel,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: scheme.onSurfaceVariant)),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: startedKeys.contains('${candidate.origin.name}:${candidate.id}')
+                            ? null
+                            : () => onDownload(candidate),
+                        icon: const Icon(Icons.download_rounded, size: 18),
+                        label: Text(startedKeys.contains('${candidate.origin.name}:${candidate.id}')
+                            ? 'Iniciado' : 'Baixar AAB'),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Copiar informações do AAB',
+                      onPressed: () => onCopy(candidate),
+                      icon: const Icon(Icons.copy_rounded),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 7),
+        ],
+        if (result.candidates.length > 5)
+          const _AuditMessage('Exibidos os cinco candidatos de maior prioridade.'),
+        if (!result.complete)
+          const _AuditMessage('Busca parcial: uma das fontes não pôde ser consultada.'),
+        for (final warning in result.warnings) _AuditMessage(warning),
+        const _AuditMessage('Artifacts são ZIPs: o app confirma e extrai o .aab no download. O AAB não pode ser instalado diretamente no Android.'),
+      ],
     );
   }
 }

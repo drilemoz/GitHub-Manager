@@ -150,6 +150,9 @@ class DownloadManagerService {
   void _startExisting(ManagedDownload item, String endpoint) {
     if (endpoint.startsWith('https://') || endpoint.startsWith('http://')) {
       _launch(item, () => _runDirectUrl(item, _publicSourceUrls[item.id] ?? endpoint));
+    } else if (item.artifactId != null &&
+        item.fileName.toLowerCase().endsWith('.aab')) {
+      _launch(item, () => _runArtifactAab(item, endpoint));
     } else if (item.isApk && item.artifactId != null) {
       _launch(item, () => _runArtifactApk(
         item,
@@ -237,6 +240,26 @@ class DownloadManagerService {
       artifactId: artifact.id,
     );
     _launch(item, () => _runRedirected(item, endpoint));
+    return item;
+  }
+
+  /// Artifact do Actions é um ZIP, não um AAB. Baixa com pausa/retomada,
+  /// inspeciona o conteúdo e publica somente um .aab reconhecido.
+  ManagedDownload startArtifactAab({
+    required String repositoryFullName,
+    required ActionArtifact artifact,
+  }) {
+    final endpoint =
+        '/repos/$repositoryFullName/actions/artifacts/${artifact.id}/zip';
+    final item = _createItem(
+      title: 'Google Play • ${artifact.name}',
+      fileName: '${_safeName(artifact.name.replaceFirst(RegExp(r'\.aab$', caseSensitive: false), ''))}.aab',
+      type: ManagedDownloadType.file,
+      repositoryFullName: repositoryFullName,
+      sourceEndpoint: endpoint,
+      artifactId: artifact.id,
+    );
+    _launch(item, () => _runArtifactAab(item, endpoint));
     return item;
   }
 
@@ -827,6 +850,136 @@ class DownloadManagerService {
     final firstEntry = await _firstZipEntryName(downloaded);
     if (firstEntry == null) return false;
     return !firstEntry.toLowerCase().endsWith('.apk');
+  }
+
+  /// O GitHub pode entregar um ZIP com um AAB ou o próprio AAB quando
+  /// archive:false. Inspecionar os bytes recebidos antes de publicar o arquivo.
+  Future<void> _runArtifactAab(ManagedDownload item, String endpoint) async {
+    final cancelToken = CancelToken();
+    _cancelTokens[item.id] = cancelToken;
+    File? partial;
+    File? publishFile;
+    try {
+      await _cleanBeforeStart(item);
+      final directory = await _workingDirectory();
+      partial = await _partialFileFor(
+        item, directory, 'aab-artifact-${item.artifactId ?? 'unknown'}.zip',
+      );
+      final offset = await partial.exists() ? await partial.length() : 0;
+      item
+        ..sourceEndpoint = endpoint
+        ..receivedBytes = offset;
+      if (cancelToken.isCancelled || item.isPaused ||
+          item.status == ManagedDownloadStatus.cancelled) return;
+      _markStarted(item, initialBytes: offset);
+      await _downloadGithubWithRecovery(
+        endpoint, partial, item: item, cancelToken: cancelToken,
+      );
+      if (item.isPaused || item.status == ManagedDownloadStatus.cancelled) return;
+      _finalizing.add(item.id);
+      item.failureStage = 'identificar_aab';
+
+      final input = InputFileStream(partial.path);
+      final archive = ZipDecoder().decodeStream(input, verify: true);
+      var directBundle = false;
+      try {
+        final paths = archive
+            .where((e) => e.isFile)
+            .map((e) => e.name.replaceAll('\\', '/').toLowerCase())
+            .toSet();
+        directBundle = paths.contains('bundleconfig.pb') &&
+            paths.contains('base/manifest/androidmanifest.xml');
+        if (!directBundle) {
+          final entries = archive.where((e) =>
+              e.isFile && !e.isSymbolicLink &&
+              e.name.toLowerCase().endsWith('.aab') &&
+              e.size > 0 && e.size <= 2 * 1024 * 1024 * 1024).toList();
+          if (entries.isEmpty) {
+            throw const FormatException(
+              'O ZIP do Artifact não contém um arquivo .aab reconhecível.',
+            );
+          }
+          entries.sort((a, b) => b.size.compareTo(a.size));
+          final entry = entries.first;
+          final safeFileName = _safeName(p.basename(
+            entry.name.replaceAll('\\', '/'),
+          ), keepExtension: true);
+          publishFile = await _uniqueFile(directory, safeFileName);
+          item.failureStage = 'extrair_aab';
+          final output = OutputFileStream(publishFile.path);
+          try {
+            entry.writeContent(output);
+          } finally {
+            output.closeSync();
+          }
+        }
+      } finally {
+        archive.clearSync();
+        input.closeSync();
+      }
+
+      if (directBundle) {
+        item.failureStage = 'preparar_aab_direto';
+        publishFile = await _uniqueFile(directory, item.fileName);
+        publishFile = await partial.rename(publishFile.path);
+        partial = null;
+      }
+      if (publishFile == null || !await publishFile.exists() ||
+          !await _isAndroidAppBundle(publishFile)) {
+        throw const FormatException(
+          'O arquivo encontrado não é um AAB válido reconhecido.',
+        );
+      }
+      item
+        ..fileName = p.basename(publishFile.path)
+        ..workingPath = null
+        ..receivedBytes = await publishFile.length()
+        ..totalBytes = await publishFile.length();
+      if (partial != null && await partial.exists()) {
+        await partial.delete();
+        partial = null;
+      }
+      if (item.isPaused || item.status == ManagedDownloadStatus.cancelled) return;
+      await _publishCompleted(item, publishFile);
+      publishFile = null;
+    } catch (error) {
+      if (!item.isPaused && item.status != ManagedDownloadStatus.cancelled) {
+        _recordFailure(item, error, fallbackStage: 'identificar_aab');
+      }
+    } finally {
+      _cancelTokens.remove(item.id);
+      _progressSamples.remove(item.id);
+      _finalizing.remove(item.id);
+      _lastChunkAt.remove(item.id);
+      _stalledIds.remove(item.id);
+      await _refreshPausedBytes(item);
+      if (publishFile != null && await publishFile.exists()) {
+        await publishFile.delete();
+      }
+      _emit();
+      await _persistHistory();
+      await _syncDownloadForegroundService();
+    }
+  }
+
+  Future<bool> _isAndroidAppBundle(File file) async {
+    final input = InputFileStream(file.path);
+    try {
+      final archive = ZipDecoder().decodeStream(input, verify: false);
+      try {
+        final names = archive.where((e) => e.isFile)
+            .map((e) => e.name.replaceAll('\\', '/').toLowerCase())
+            .toSet();
+        return names.contains('bundleconfig.pb') &&
+            names.contains('base/manifest/androidmanifest.xml');
+      } finally {
+        archive.clearSync();
+      }
+    } catch (_) {
+      return false;
+    } finally {
+      input.closeSync();
+    }
   }
 
   Future<void> _runArtifactApk(

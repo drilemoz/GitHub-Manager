@@ -1,4 +1,12 @@
-# GitHub Manager 2.0.136
+# GitHub Manager 2.0.137
+## AAB encontrado automaticamente no botão Play (2.0.137)
+
+- **Play → Android App Bundle (AAB):** pesquisa arquivos `.aab` em Releases e Artifacts que sugerem bundles, com origem, versão/tag, data e número da execução quando disponíveis.
+- Releases com extensão `.aab` são arquivos confirmados pela listagem. Artifacts são ZIPs: o nome apenas indica um possível AAB. Quando você baixa, o app extrai e valida a estrutura antes de concluir.
+- Prioriza resultados da build concluída com sucesso (confirmada pela API) e arquivos `.aab` diretos; exibe até cinco candidatos e permite copiar os dados.
+- Não anuncia “AAB não encontrado” quando a consulta de alguma fonte falha. Mantém a auditoria Google Play e os downloads tradicionais de APK/Artifacts.
+- AABs não são instaláveis diretamente no Android; o download vai para a Central de Downloads e segue as regras de armazenamento e limpeza configuradas.
+
 ## Notificações silenciosas e configuráveis (2.0.136)
 
 - Em **Configurações → Notificações**, o usuário escolhe se quer avisos opcionais e quais: builds concluídas, problemas de builds, downloads concluídos e erros de downloads. **Desativado por padrão**, inclusive em atualizações, até escolha explícita.

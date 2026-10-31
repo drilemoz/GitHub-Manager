@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class UpdateWhatsNewScreen extends StatelessWidget {
-  static const releaseNotesVersion = '2.0.136';
+  static const releaseNotesVersion = '2.0.137';
 
   const UpdateWhatsNewScreen({
     required this.versionLabel,
@@ -69,21 +69,21 @@ class UpdateWhatsNewScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 24),
                     const _UpdateItem(
-                      icon: Icons.notifications_off_outlined,
-                      title: 'Avisos opcionais sob seu controle',
-                      description: 'As notificações opcionais começam desligadas. Em Configurações, escolha avisos de conclusão ou falha para builds e downloads.',
+                      icon: Icons.storefront_outlined,
+                      title: 'Encontre AABs pelo botão Play',
+                      description: 'O botão Play busca automaticamente arquivos AAB em Releases e possíveis bundles nos Artifacts, exibindo a origem e a build quando disponíveis.',
                     ),
                     const SizedBox(height: 12),
                     const _UpdateItem(
-                      icon: Icons.shield_outlined,
-                      title: 'Sem notificações repetidas de builds',
-                      description: 'Registro persistente coordena monitor ativo e WorkManager; eventos antigos ou já registrados deixam de disparar novamente.',
+                      icon: Icons.archive_outlined,
+                      title: 'Extrair AAB de Artifacts',
+                      description: 'Downloads de Artifacts validam o ZIP, localizam e extraem o arquivo AAB, sem confundi-lo com um APK instalável.',
                     ),
                     const SizedBox(height: 12),
                     const _UpdateItem(
-                      icon: Icons.tune_rounded,
-                      title: 'Silenciar com segurança',
-                      description: 'Desligar avisos remove notificações opcionais antigas. O progresso das transferências ativas continua protegido pelo serviço Android.',
+                      icon: Icons.fact_check_outlined,
+                      title: 'Auditoria e download juntos',
+                      description: 'A auditoria Google Play permanece disponível, com Reavaliar, Copiar relatório e cópia dos detalhes do AAB encontrado.',
                     ),
                   ],
                 ),
