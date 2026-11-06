@@ -114,7 +114,7 @@ mixin _RunDetailsStateController on ConsumerState<_RunDetailsSheet> {
         title: const Text('Excluir execução permanentemente?'),
         content: Text(
           '${_run.name} #${_run.runNumber} será removida do GitHub Actions. '
-          'Os artifacts da execução serão removidos. APKs publicados em Releases serão preservados, pois várias builds podem usar o mesmo commit. '
+          'Todos os artifacts da execução serão removidos, inclusive ZIPs que contêm APKs. APKs publicados em Releases serão preservados, pois várias builds podem usar o mesmo commit. '
           'Esta ação não pode ser desfeita.',
         ),
         actions: [

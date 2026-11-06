@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:github_manager/core/providers/core_providers.dart';
 import 'package:github_manager/features/builds/data/artifact_service.dart';
+import 'package:github_manager/features/builds/data/actions_storage_service.dart';
 import 'package:github_manager/features/builds/data/build_cleanup_service.dart';
 import 'package:github_manager/features/builds/data/global_builds_service.dart';
 import 'package:github_manager/features/builds/domain/action_artifact.dart';
@@ -10,6 +11,13 @@ import 'package:github_manager/features/repositories/presentation/repository_pro
 
 final artifactServiceProvider = Provider<ArtifactService>(
   (ref) => ArtifactService(ref.watch(githubApiClientProvider)),
+);
+
+final actionsStorageServiceProvider = Provider<ActionsStorageService>(
+  (ref) => ActionsStorageService(
+    ref.watch(githubApiClientProvider),
+    ref.watch(artifactServiceProvider),
+  ),
 );
 
 final repositoryArtifactsProvider = FutureProvider.autoDispose.family<List<ActionArtifact>, String>(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:github_manager/features/builds/presentation/global_builds_screen.dart';
+import 'package:github_manager/features/builds/presentation/actions_storage_screen.dart';
 import 'package:github_manager/features/downloads/presentation/downloads_screen.dart';
 import 'package:github_manager/features/home/presentation/profile_screen.dart';
 import 'package:github_manager/features/help/presentation/help_screen.dart';
@@ -34,6 +35,12 @@ final appRouter = GoRouter(
     ),
     GoRoute(path: '/profile', builder: (_, _) => const ProfileScreen()),
     GoRoute(path: '/builds', builder: (_, _) => const GlobalBuildsScreen()),
+    GoRoute(
+      path: '/builds/storage',
+      builder: (_, state) => ActionsStorageScreen(
+        initialRepository: state.uri.queryParameters['repository'],
+      ),
+    ),
     GoRoute(
       path: '/settings',
       builder: (_, _) => const SettingsScreen(),

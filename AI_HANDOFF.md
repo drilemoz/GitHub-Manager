@@ -1,4 +1,4 @@
-# GitHub Manager 2.0.137+200151
+# GitHub Manager 2.0.138+200152
 
 - Novo `PlayAabDiscoveryService` com consultas de Release + Artifact independentes; seleção heurística testada no domínio `play_aab_discovery.dart`.
 - Novo botão Baixar AAB dentro de Play (`play_readiness_dialog.dart`), sem alterar o atalho APK existente. Releases vão para startReleaseAsset; Artifacts para startArtifactAab.

@@ -1,4 +1,12 @@
-# GitHub Manager 2.0.137
+# GitHub Manager 2.0.138
+## Armazenamento do GitHub Actions e limpeza verificável (2.0.138)
+
+- Em Builds, acesse **Armazenamento Actions** pelo ícone de caixa. Também disponível nas Builds de cada repositório.
+- Veja os artifacts e tamanhos de um repositório, selecione quais apagar e confirme a exclusão irreversível. O app reconsulta a API e distingue exclusão aceita de remoção verificada.
+- A exclusão de uma execução de workflow remove **todos os artifacts ligados a ela**, incluindo ZIPs que contenham APKs. **Não** remove assets de Releases nem o código-fonte.
+- Relatório opcional da API GitHub Billing de consumo Actions no mês, separado do espaço atual de artifacts. A cota oficial e o orçamento permanecem consultáveis no GitHub.
+- A listagem pagina até 10 mil artifacts por repositório ou execução; nunca rotula uma paginação truncada como completa.
+
 ## AAB encontrado automaticamente no botão Play (2.0.137)
 
 - **Play → Android App Bundle (AAB):** pesquisa arquivos `.aab` em Releases e Artifacts que sugerem bundles, com origem, versão/tag, data e número da execução quando disponíveis.

@@ -545,6 +545,11 @@ class _GlobalBuildsScreenState extends ConsumerState<GlobalBuildsScreen>
         title: const Text('Builds'),
         actions: [
           IconButton(
+            tooltip: 'Armazenamento e limpeza de APKs/artifacts',
+            onPressed: () => context.push('/builds/storage'),
+            icon: const Icon(Icons.inventory_2_outlined),
+          ),
+          IconButton(
             tooltip: _searchOpen ? 'Fechar busca' : 'Buscar builds',
             icon: Icon(_searchOpen ? Icons.close_rounded : Icons.search_rounded),
             onPressed: () => setState(() {

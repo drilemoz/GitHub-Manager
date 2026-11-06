@@ -1,3 +1,7 @@
+### 2.0.138
+
+A versão canônica é `version: 2.0.138+200152` (versionName 2.0.138; Android versionCode 200152). Inclui o painel de armazenamento/limpeza de artifacts no GitHub Actions e correções na confirmação/verificação de exclusão. Consulte `docs/RELEASE_2.0.138.md`.
+
 ### 2.0.137
 
 A versão canônica é `version: 2.0.137+200151` (versionName 2.0.137; Android versionCode 200151). Acrescenta busca e download seguro de Android App Bundle (AAB) em Play, tanto em Releases quanto em Artifacts ZIP, com auditoria preservada. Consulte `docs/RELEASE_2.0.137.md`.

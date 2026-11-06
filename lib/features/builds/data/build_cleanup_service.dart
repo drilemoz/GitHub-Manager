@@ -124,6 +124,7 @@ class BuildCleanupService {
     final knownArtifactIds = linkedArtifacts.map((item) => item.id).toSet();
     final unresolvedArtifactIds = <int>{};
     var extraArtifactsRemoved = 0;
+    var verified = false;
 
     // O GitHub deve remover os artifacts junto com o run. Fazemos uma
     // verificação adicional na coleção do repositório para cobrir atraso de
@@ -151,16 +152,29 @@ class BuildCleanupService {
           }
         }
       }
+      // Só contabiliza artifacts como confirmados quando a consulta final
+      // mostra que não há mais IDs associados ao run. A resposta 204 do
+      // DELETE do run, isoladamente, não prova a limpeza da coleção.
+      final afterCleanup = remaining.isEmpty
+          ? remaining
+          : (await _artifacts.listArtifacts(repositoryFullName))
+              .where((artifact) => artifact.workflowRunId == run.id)
+              .toList(growable: false);
+      if (afterCleanup.isNotEmpty) {
+        warnings.add(
+          '${afterCleanup.length} artifact(s) ainda aparecem na API após a limpeza. Confira novamente antes de considerar o espaço liberado.',
+        );
+      }
+      verified = afterCleanup.isEmpty && unresolvedArtifactIds.isEmpty;
     } catch (error) {
       warnings.add(
         'A build foi excluída, mas não foi possível confirmar a limpeza dos artifacts: ${_message(error)}',
       );
     }
 
-    final removedArtifacts = knownArtifactIds
-            .where((id) => !unresolvedArtifactIds.contains(id))
-            .length +
-        extraArtifactsRemoved;
+    final removedArtifacts = verified
+        ? knownArtifactIds.length + extraArtifactsRemoved
+        : 0;
 
     // Releases continuam disponíveis e podem ser gerenciadas explicitamente
     // na tela de APKs/Releases do repositório.

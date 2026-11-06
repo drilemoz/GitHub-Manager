@@ -165,6 +165,9 @@ class _FakeArtifactService extends ArtifactService {
     required int artifactId,
   }) async {
     events.add('delete-artifact:$artifactId');
+    repositoryArtifactsAfterRunDelete = repositoryArtifactsAfterRunDelete
+        .where((artifact) => artifact.id != artifactId)
+        .toList(growable: false);
   }
 
   @override

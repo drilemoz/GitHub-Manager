@@ -1,3 +1,12 @@
+## 2.0.138+200152 — 2026-11-06
+
+- Novo menu **Builds → Armazenamento Actions** e atalho nas builds do repositório para visualizar artifacts e tamanho por repositório, selecionar e excluir só os artifacts, sem tocar em Releases.
+- Exclusão em lote com progresso e consulta posterior para identificar IDs que continuam na API; aviso explícito se a confirmação não for possível.
+- Relatório mensal de consumo GitHub Actions pela API Billing (quando autorizado), sem confundir GB-horas faturáveis com espaço livre atual nem presumir limite de armazenamento pela API.
+- Corrigidas as confirmações de exclusão em massa: excluir workflow runs também exclui seus artifacts/APKs anexados, mas não APKs publicados em Releases.
+- Reforçada verificação do serviço ao remover execuções: reconsulta após limpeza compensatória e não contabiliza artifacts não verificados como removidos.
+- Paginação de artifacts ampliada a 100 páginas com erro explícito de incompletude após o limite; novos testes unitários do serviço de armazenamento.
+
 ## 2.0.137+200151 — 2026-10-31
 
 - Integra no botão Play a pesquisa automática de AABs publicados em Releases e de Artifacts candidatos, mantendo a auditoria anterior.

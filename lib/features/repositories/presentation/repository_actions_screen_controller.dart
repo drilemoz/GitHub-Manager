@@ -321,11 +321,11 @@ mixin _RepositoryActionsStateController on ConsumerState<RepositoryActionsScreen
         content: Text(
           failuresOnly
               ? 'Somente as execuções que falharam serão removidas permanentemente do GitHub Actions. '
-                  'As execuções concluídas com sucesso serão mantidas. Artifacts e APKs de Release vinculados às builds excluídas também serão limpos. '
-                  'Esta ação não pode ser desfeita.'
+                  'As execuções concluídas com sucesso serão mantidas. Os artifacts dessas execuções excluídas, inclusive ZIPs com APKs, também serão apagados. '
+                  'APKs publicados em Releases e o código-fonte serão preservados. Esta ação não pode ser desfeita.'
               : 'As execuções selecionadas serão removidas permanentemente do GitHub Actions. '
-                  'Artifacts e APKs de Release vinculados a essas execuções também serão limpos. '
-                  'Esta ação não pode ser desfeita.',
+                  'Todos os artifacts associados, inclusive ZIPs com APKs, serão apagados. '
+                  'APKs publicados em Releases e o código-fonte serão preservados. Esta ação não pode ser desfeita.',
         ),
         actions: [
           TextButton(
@@ -371,17 +371,17 @@ mixin _RepositoryActionsStateController on ConsumerState<RepositoryActionsScreen
       if (result.hasFailures) {
         showCenteredNotice(
           context,
-          '${result.deletedCount} excluída(s) • ${result.failedCount} não puderam ser excluída(s). ${result.relatedFilesRemoved} arquivo(s) vinculado(s) removido(s). As falhas restantes continuam selecionadas.',
+          '${result.deletedCount} excluída(s) • ${result.failedCount} falha(s). ${result.artifactsRemoved} artifact(s) confirmados como removidos. Releases preservadas; confira os avisos de limpeza. As falhas permanecem selecionadas.',
         );
       } else if (result.hasWarnings) {
         showCenteredNotice(
           context,
-          '${result.deletedCount} execução(ões) excluída(s) • ${result.relatedFilesRemoved} arquivo(s) vinculado(s) removido(s). Alguns APKs de Release podem exigir Contents: write no token.',
+          '${result.deletedCount} execução(ões) excluída(s); ${result.artifactsRemoved} artifact(s) identificado(s) como removido(s). Confira avisos: a limpeza pode não ter sido totalmente verificada. Releases preservadas.',
         );
       } else {
         showCenteredNotice(
           context,
-          '${result.deletedCount} execução(ões) excluída(s) • ${result.relatedFilesRemoved} artifact(s)/APK(s) vinculado(s) removido(s).',
+          '${result.deletedCount} execução(ões) excluída(s) e ${result.artifactsRemoved} artifact(s) vinculado(s) removido(s). APKs em Releases preservados.',
         );
       }
     } catch (error) {

@@ -48,7 +48,7 @@ class ArtifactService {
 
   Future<List<ActionArtifact>> listArtifacts(String repositoryFullName) async {
     final artifacts = <ActionArtifact>[];
-    for (var page = 1; page <= 5; page++) {
+    for (var page = 1; page <= 100; page++) {
       final response = await _client.get<Map<String, dynamic>>(
         '/repos/$repositoryFullName/actions/artifacts',
         queryParameters: {'per_page': 100, 'page': page},
@@ -61,6 +61,9 @@ class ArtifactService {
           .toList(growable: false);
       artifacts.addAll(pageItems);
       if (raw.length < 100) break;
+      if (page == 100) {
+        throw StateError('Mais de 10.000 artifacts: contagem incompleta; não é seguro apresentar este total como completo.');
+      }
     }
     artifacts.sort(
       (a, b) => (b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0))
@@ -74,7 +77,7 @@ class ArtifactService {
     required int runId,
   }) async {
     final artifacts = <ActionArtifact>[];
-    for (var page = 1; page <= 5; page++) {
+    for (var page = 1; page <= 100; page++) {
       final response = await _client.get<Map<String, dynamic>>(
         '/repos/$repositoryFullName/actions/runs/$runId/artifacts',
         queryParameters: {'per_page': 100, 'page': page},
@@ -87,6 +90,9 @@ class ArtifactService {
           .toList(growable: false);
       artifacts.addAll(pageItems);
       if (raw.length < 100) break;
+      if (page == 100) {
+        throw StateError('Mais de 10.000 artifacts na execução: consulta incompleta.');
+      }
     }
     return List<ActionArtifact>.unmodifiable(artifacts);
   }

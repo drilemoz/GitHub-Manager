@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class UpdateWhatsNewScreen extends StatelessWidget {
-  static const releaseNotesVersion = '2.0.137';
+  static const releaseNotesVersion = '2.0.138';
 
   const UpdateWhatsNewScreen({
     required this.versionLabel,
@@ -70,20 +70,20 @@ class UpdateWhatsNewScreen extends StatelessWidget {
                     const SizedBox(height: 24),
                     const _UpdateItem(
                       icon: Icons.storefront_outlined,
-                      title: 'Encontre AABs pelo botão Play',
-                      description: 'O botão Play busca automaticamente arquivos AAB em Releases e possíveis bundles nos Artifacts, exibindo a origem e a build quando disponíveis.',
+                      title: 'Gerenciar armazenamento Actions',
+                      description: 'Nova opção em Builds para listar, selecionar e excluir artifacts com tamanho e confirmação do GitHub.',
                     ),
                     const SizedBox(height: 12),
                     const _UpdateItem(
                       icon: Icons.archive_outlined,
-                      title: 'Extrair AAB de Artifacts',
-                      description: 'Downloads de Artifacts validam o ZIP, localizam e extraem o arquivo AAB, sem confundi-lo com um APK instalável.',
+                      title: 'Excluir builds também exclui artifacts',
+                      description: 'Remover uma execução apaga seus artifacts e ZIPs com APKs. APKs publicados em Releases permanecem intactos.',
                     ),
                     const SizedBox(height: 12),
                     const _UpdateItem(
                       icon: Icons.fact_check_outlined,
-                      title: 'Auditoria e download juntos',
-                      description: 'A auditoria Google Play permanece disponível, com Reavaliar, Copiar relatório e cópia dos detalhes do AAB encontrado.',
+                      title: 'Cota e verificação de exclusão',
+                      description: 'Relatório mensal de uso Actions quando autorizado e reconsulta após a limpeza. Uso faturável não é o espaço atual da conta.',
                     ),
                   ],
                 ),

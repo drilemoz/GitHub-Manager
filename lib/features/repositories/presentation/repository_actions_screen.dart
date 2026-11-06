@@ -138,6 +138,12 @@ class _RepositoryActionsScreenState extends ConsumerState<RepositoryActionsScree
           ] else ...[
             if (!widget.readOnly)
               IconButton(
+                onPressed: () => context.push('/builds/storage?repository=${Uri.encodeQueryComponent(widget.repositoryFullName)}'),
+                tooltip: 'Gerenciar armazenamento de artifacts',
+                icon: const Icon(Icons.inventory_2_outlined, size: 21),
+              ),
+            if (!widget.readOnly)
+              IconButton(
                 onPressed: () => setState(() => _selectionMode = true),
                 tooltip: 'Selecionar execuções',
                 visualDensity: VisualDensity.compact,
