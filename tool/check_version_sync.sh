@@ -26,6 +26,27 @@ grep -Fq "version: '$VERSION_NAME'," "$ROOT/lib/features/settings/presentation/s
   echo "Histórico de Configurações não inclui a versão atual" >&2
   exit 1
 }
+# O teste Flutter também verifica as três notas. Validar antes do analyze
+# economiza minutos de Actions e sinaliza erro de documentação mais cedo.
+if [[ "$VERSION_NAME" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+  major="${BASH_REMATCH[1]}"
+  minor="${BASH_REMATCH[2]}"
+  patch="${BASH_REMATCH[3]}"
+  mapfile -t history < <(sed -nE "s/^[[:space:]]*version: '([0-9]+\.[0-9]+\.[0-9]+)',[[:space:]]*$/\1/p" \
+    "$ROOT/lib/features/settings/presentation/settings_screen.dart")
+  [[ "${#history[@]}" -eq 3 ]] || {
+    echo "Histórico de Configurações deve ter exatamente 3 versões; encontrou ${#history[@]}" >&2
+    exit 1
+  }
+  for offset in 0 1 2; do
+    expected="$major.$minor.$((patch - offset))"
+    [[ "${history[$offset]}" == "$expected" ]] || {
+      echo "Histórico fora de ordem: posição $((offset + 1)) = ${history[$offset]}, esperado $expected" >&2
+      exit 1
+    }
+  done
+fi
+
 grep -Fxq "# GitHub Manager $VERSION_NAME" "$ROOT/README.md" || {
   echo "Título do README desatualizado" >&2
   exit 1

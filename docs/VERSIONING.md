@@ -1,3 +1,7 @@
+### 2.0.140
+
+A versão canônica é `version: 2.0.140+200154` (versionName 2.0.140; Android versionCode 200154). Corrige a falha do teste da tela de Configurações no workflow Android APK #129, ordena cronologicamente as últimas três notas e valida a ordem já no script de versionamento. Preserva a limpeza verificável de artifacts/APKs de execuções. Consulte `docs/RELEASE_2.0.140.md`.
+
 ### 2.0.139
 
 A versão canônica é `version: 2.0.139+200153` (versionName 2.0.139; Android versionCode 200153). Refina armazenamento Actions, confirmação de exclusão, inventário de artifacts, filtros, seleção conservadora e relatório de cobrança sob demanda. Consulte `docs/RELEASE_2.0.139.md`.

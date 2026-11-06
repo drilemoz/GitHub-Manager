@@ -1,4 +1,11 @@
-# GitHub Manager 2.0.139
+# GitHub Manager 2.0.140
+## Correção do workflow Android APK #129 (2.0.140)
+
+- Corrige a ordem cronológica das três versões em **Configurações → Últimas 3 mudanças**. A inversão de 2.0.137 e 2.0.138 interrompia um teste automatizado: **285 aprovados, 1 reprovado**, impedindo o build.
+- Adiciona validação antecipada dessa sequência ao script de versionamento, antes do `flutter analyze` e dos testes no GitHub Actions.
+- Mantém o gerenciamento de artifacts do GitHub Actions e a exclusão de execuções com confirmação verificável das versões 2.0.138/2.0.139.
+- Executar novamente o workflow Android APK após publicar esta versão; Flutter/Gradle indisponíveis no ambiente local.
+
 ## Limpeza mais segura e navegação de artifacts (2.0.139)
 
 - **Builds → Armazenamento Actions:** filtro por possíveis APKs, arquivos expirados e com mais de sete dias; ordenação por data ou tamanho e listagem em grupos de até 80 itens.

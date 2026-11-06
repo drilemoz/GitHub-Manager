@@ -1,3 +1,12 @@
+# GitHub Manager 2.0.140+200154
+
+- Base: ZIP da versão 2.0.139+200153, compilação Android APK #129 com **285 testes aprovados / 1 reprovado**.
+- Causa: em Configurações → Últimas 3 mudanças, a ordem estava 2.0.139, 2.0.137, 2.0.138. O teste `test/system_ui_settings_contract_test.dart` exige as três últimas em ordem decrescente. Etapa `flutter test` impediu o build.
+- Correção: histórico mostra 2.0.140, 2.0.139, 2.0.138; tela de Novidades, documentos e metadados sincronizados.
+- Prevenção: `tool/check_version_sync.sh` confere a quantidade e a ordem das três versões antes de análise/testes; o teste Flutter existente continua obrigatório.
+- Mantida a exclusão segura de execuções e artifacts das versões 2.0.138/2.0.139. APKs publicados em Releases não são atingidos pela exclusão de workflow runs.
+- Pendente: executar GitHub Actions Android APK para validar os 286 testes, analyze e build real; sem Flutter/Dart no ambiente local.
+
 # GitHub Manager 2.0.139+200153
 
 - Base da atualização: 2.0.138+200152. Preserva toda a árvore e os workflows.

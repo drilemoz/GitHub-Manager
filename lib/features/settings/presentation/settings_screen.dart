@@ -372,12 +372,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                   children: const [
                     _ChangeNote(
-                      version: '2.0.139',
-                      text: 'Limpeza Actions com filtros, seleção conservadora, resultados de exclusão precisos e verificação por ID.',
+                      version: '2.0.140',
+                      text: 'Corrige a ordem das três alterações e impede que novas versões com histórico fora de sequência avancem no workflow.',
                     ),
                     _ChangeNote(
-                      version: '2.0.137',
-                      text: 'Busca AAB no botão Play, com download direto de Release ou extração validada do Artifact ZIP.',
+                      version: '2.0.139',
+                      text: 'Limpeza Actions com filtros, seleção conservadora, resultados de exclusão precisos e verificação por ID.',
                     ),
                     _ChangeNote(
                       version: '2.0.138',

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class UpdateWhatsNewScreen extends StatelessWidget {
-  static const releaseNotesVersion = '2.0.139';
+  static const releaseNotesVersion = '2.0.140';
 
   const UpdateWhatsNewScreen({
     required this.versionLabel,
@@ -70,20 +70,20 @@ class UpdateWhatsNewScreen extends StatelessWidget {
                     const SizedBox(height: 24),
                     const _UpdateItem(
                       icon: Icons.shield_outlined,
-                      title: 'Exclusões com confirmação verificável',
-                      description: 'A API distingue solicitações aceitas, artifacts já ausentes e resultados ainda não confirmados.',
+                      title: 'Histórico de atualizações corrigido',
+                      description: 'As três mudanças exibidas em Configurações agora aparecem em ordem: 2.0.140, 2.0.139 e 2.0.138.'
                     ),
                     const SizedBox(height: 12),
                     const _UpdateItem(
                       icon: Icons.filter_list_rounded,
-                      title: 'Limpeza seletiva mais segura',
-                      description: 'Filtros, ordenação e seleção de builds anteriores, protegendo os artifacts das execuções mais recentes.',
+                      title: 'Verificação mais cedo no workflow',
+                      description: 'O versionamento e a ordem das notas passam por uma verificação antes de executar todos os testes do Flutter.'
                     ),
                     const SizedBox(height: 12),
                     const _UpdateItem(
                       icon: Icons.speed_outlined,
-                      title: 'Verificação por ID e consulta opcional',
-                      description: 'Exclusão de builds verifica artifacts individualmente; consulta de cobrança é feita apenas quando solicitada.',
+                      title: 'Limpeza de artifacts preservada',
+                      description: 'Mantidos filtros, seleção manual, confirmação e verificação de exclusão de artifacts/APKs das execuções.'
                     ),
                   ],
                 ),

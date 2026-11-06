@@ -1,3 +1,11 @@
+## 2.0.140+200154 — 2026-11-06
+
+- Corrige a falha no workflow **Android APK #129**: `system_ui_settings_contract_test.dart` encontrou as notas de 2.0.137 e 2.0.138 invertidas no histórico de Configurações.
+- Ordena as três últimas alterações como **2.0.140, 2.0.139 e 2.0.138**, mantendo textos correspondentes e a tela de Novidades sincronizada.
+- Acrescenta verificação prévia da sequência ao `tool/check_version_sync.sh`, para impedir esse erro antes das etapas mais custosas de análise/testes.
+- Preserva a lógica de limpeza de execuções e artifacts/APKs (sem apagar Releases), filtros e verificações de API das versões 2.0.138 e 2.0.139.
+- Incrementa `versionCode` para 200154 e sincroniza README, CHANGELOG, VERSIONING, release notes, Novidades, Configurações e `github-manager.json`.
+
 ## 2.0.139+200153 — 2026-11-06
 
 - Melhora o painel de armazenamento do GitHub Actions com filtros de APK provável, expirado e antigo, ordenação, exibição incremental e seleções conservadoras que protegem a última execução e o grupo do APK provável mais recente.
