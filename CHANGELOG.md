@@ -1,3 +1,13 @@
+## 2.0.139+200153 — 2026-11-06
+
+- Melhora o painel de armazenamento do GitHub Actions com filtros de APK provável, expirado e antigo, ordenação, exibição incremental e seleções conservadoras que protegem a última execução e o grupo do APK provável mais recente.
+- Diferencia DELETE aceito, ID já ausente (404), consulta posterior confirmada, solicitação rejeitada e pendência por falha de leitura; reconsulta brevemente em caso de atraso da API.
+- Na exclusão de builds, substitui consultas repetidas a todos os artifacts do repositório por GET de cada artifact já inventariado; não contabiliza ausência sem verificação.
+- Relatório faturável passa a ser acionado sob demanda. Não representa a ocupação instantânea nem o saldo oficial da cota.
+- Exibe avisos individuais de exclusão (em massa ou por run), rejeita resposta inválida ou IDs duplicados na paginação de artifacts e preserva a seleção que falhou.
+- Mantém execução e Releases separadas: apagar execução remove seus artifacts, sem apagar assets de Releases; não executa nenhuma exclusão automaticamente.
+- Adiciona regressões de API, falhas, seleção e validação de metadados. Flutter/Android build e teste com token real permanecem pendentes.
+
 ## 2.0.138+200152 — 2026-11-06
 
 - Novo menu **Builds → Armazenamento Actions** e atalho nas builds do repositório para visualizar artifacts e tamanho por repositório, selecionar e excluir só os artifacts, sem tocar em Releases.

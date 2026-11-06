@@ -139,15 +139,37 @@ mixin _RunDetailsStateController on ConsumerState<_RunDetailsSheet> {
       ref.invalidate(repositoryArtifactsProvider(widget.repositoryFullName));
       ref.invalidate(repositoryReleaseAssetsProvider(widget.repositoryFullName));
       if (!mounted) return;
-      Navigator.of(context).pop();
-      widget.onChanged();
-      final removed = result.relatedFilesRemoved;
+      final removed = result.artifactsRemoved;
+      if (result.hasWarnings) {
+        await showDialog<void>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Execução excluída — conferência parcial'),
+            content: SingleChildScrollView(
+              child: SelectableText(
+                '$removed artifact(s) confirmado(s) como ausentes pela API. '
+                'As Releases não foram alteradas.\n\n'
+                '${result.warnings.join('\n')}',
+              ),
+            ),
+            actions: [
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('Entendi'),
+              ),
+            ],
+          ),
+        );
+        if (!mounted) return;
+      }
       showCenteredNotice(
         context,
         result.hasWarnings
-            ? 'Build excluída • $removed artifact(s) removido(s). Alguns itens não puderam ser conferidos. Releases preservadas.'
-            : 'Build excluída • $removed artifact(s) removido(s). Releases preservadas.',
+            ? 'Execução excluída. $removed artifact(s) confirmado(s); há conferências pendentes. Releases preservadas.'
+            : 'Execução excluída. $removed artifact(s) confirmado(s) como ausentes. Releases preservadas.',
       );
+      Navigator.of(context).pop();
+      widget.onChanged();
     } catch (error) {
       if (mounted) {
         _showError(error);

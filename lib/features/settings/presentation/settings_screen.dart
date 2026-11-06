@@ -372,16 +372,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                   children: const [
                     _ChangeNote(
-                      version: '2.0.138',
-                      text: 'Painel de armazenamento Actions, exclusão de artifacts verificada e confirmações corretas para apagar builds.',
+                      version: '2.0.139',
+                      text: 'Limpeza Actions com filtros, seleção conservadora, resultados de exclusão precisos e verificação por ID.',
                     ),
                     _ChangeNote(
                       version: '2.0.137',
                       text: 'Busca AAB no botão Play, com download direto de Release ou extração validada do Artifact ZIP.',
                     ),
                     _ChangeNote(
-                      version: '2.0.136',
-                      text: 'Notificações por categoria, desligadas por padrão, com deduplicação SQLite e bloqueio de alertas antigos.',
+                      version: '2.0.138',
+                      text: 'Painel Actions com listagem de artifacts e explicação da diferença entre builds e Releases.',
                     ),
                   ],
                 ),

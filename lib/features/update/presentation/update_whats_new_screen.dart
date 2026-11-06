@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class UpdateWhatsNewScreen extends StatelessWidget {
-  static const releaseNotesVersion = '2.0.138';
+  static const releaseNotesVersion = '2.0.139';
 
   const UpdateWhatsNewScreen({
     required this.versionLabel,
@@ -69,21 +69,21 @@ class UpdateWhatsNewScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 24),
                     const _UpdateItem(
-                      icon: Icons.storefront_outlined,
-                      title: 'Gerenciar armazenamento Actions',
-                      description: 'Nova opção em Builds para listar, selecionar e excluir artifacts com tamanho e confirmação do GitHub.',
+                      icon: Icons.shield_outlined,
+                      title: 'Exclusões com confirmação verificável',
+                      description: 'A API distingue solicitações aceitas, artifacts já ausentes e resultados ainda não confirmados.',
                     ),
                     const SizedBox(height: 12),
                     const _UpdateItem(
-                      icon: Icons.archive_outlined,
-                      title: 'Excluir builds também exclui artifacts',
-                      description: 'Remover uma execução apaga seus artifacts e ZIPs com APKs. APKs publicados em Releases permanecem intactos.',
+                      icon: Icons.filter_list_rounded,
+                      title: 'Limpeza seletiva mais segura',
+                      description: 'Filtros, ordenação e seleção de builds anteriores, protegendo os artifacts das execuções mais recentes.',
                     ),
                     const SizedBox(height: 12),
                     const _UpdateItem(
-                      icon: Icons.fact_check_outlined,
-                      title: 'Cota e verificação de exclusão',
-                      description: 'Relatório mensal de uso Actions quando autorizado e reconsulta após a limpeza. Uso faturável não é o espaço atual da conta.',
+                      icon: Icons.speed_outlined,
+                      title: 'Verificação por ID e consulta opcional',
+                      description: 'Exclusão de builds verifica artifacts individualmente; consulta de cobrança é feita apenas quando solicitada.',
                     ),
                   ],
                 ),

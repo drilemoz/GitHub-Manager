@@ -3,10 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:github_manager/core/platform/platform_actions.dart';
 import 'package:github_manager/features/builds/data/actions_storage_service.dart';
 import 'package:github_manager/features/builds/domain/action_artifact.dart';
+import 'package:github_manager/features/builds/domain/storage_selection_policy.dart';
 import 'package:github_manager/features/builds/presentation/build_providers.dart';
 import 'package:github_manager/features/repositories/domain/github_repository.dart';
 import 'package:github_manager/features/repositories/presentation/repository_providers.dart';
 import 'package:go_router/go_router.dart';
+
+enum _ArtifactFilter { all, possibleApk, expired, olderThanWeek }
+enum _ArtifactOrder { newest, oldest, largest }
 
 /// Limpeza seletiva do armazenamento de Artifacts, sem afetar Releases e fontes.
 /// Uma listagem por vez: não faz centenas de chamadas ao abrir a tela.
@@ -27,19 +31,22 @@ class _ActionsStorageScreenState extends ConsumerState<ActionsStorageScreen> {
   String? _error;
   String? _billingError;
   List<ActionsBillingItem>? _billing;
+  bool _billingLoading = false;
+  _ArtifactFilter _filter = _ArtifactFilter.all;
+  _ArtifactOrder _order = _ArtifactOrder.newest;
   bool _loadingRepos = true;
   bool _loadingArtifacts = false;
   bool _deleting = false;
   int _deleted = 0;
   int _totalToDelete = 0;
   int _generation = 0;
+  int _displayLimit = 80;
   String? _report;
 
   @override
   void initState() {
     super.initState();
     _loadRepositories();
-    _loadBilling();
   }
 
   Future<void> _loadRepositories() async {
@@ -69,16 +76,54 @@ class _ActionsStorageScreenState extends ConsumerState<ActionsStorageScreen> {
   }
 
   Future<void> _loadBilling() async {
+    if (_billingLoading) return;
+    setState(() {
+      _billingLoading = true;
+      _billingError = null;
+    });
     try {
       final items = await ref.read(actionsStorageServiceProvider).billingUsageThisMonth();
       if (mounted) setState(() => _billing = items);
     } catch (_) {
       if (mounted) {
         setState(() => _billingError =
-            'Relatório de cobrança indisponível (API em preview; pode exigir Plan: read).');
+            'Relatório de cobrança indisponível. Confira a permissão Plan: read ou consulte o GitHub.');
       }
+    } finally {
+      if (mounted) setState(() => _billingLoading = false);
     }
   }
+
+  List<ActionArtifact> _visibleArtifacts() {
+    final cutoff = DateTime.now().subtract(const Duration(days: 7));
+    final result = _artifacts.where((item) {
+      switch (_filter) {
+        case _ArtifactFilter.all:
+          return true;
+        case _ArtifactFilter.possibleApk:
+          return item.likelyContainsApk;
+        case _ArtifactFilter.expired:
+          return item.expired;
+        case _ArtifactFilter.olderThanWeek:
+          return item.createdAt != null && item.createdAt!.isBefore(cutoff);
+      }
+    }).toList(growable: true);
+    final epoch = DateTime.fromMillisecondsSinceEpoch(0);
+    result.sort((a, b) {
+      switch (_order) {
+        case _ArtifactOrder.newest:
+          return (b.createdAt ?? epoch).compareTo(a.createdAt ?? epoch);
+        case _ArtifactOrder.oldest:
+          return (a.createdAt ?? epoch).compareTo(b.createdAt ?? epoch);
+        case _ArtifactOrder.largest:
+          return b.sizeBytes.compareTo(a.sizeBytes);
+      }
+    });
+    return result;
+  }
+
+  Set<int> _olderArtifactIds() =>
+      StorageSelectionPolicy.selectOlderRunArtifacts(_artifacts);
 
   void _chooseRepository(String? name) {
     if (name == null || _deleting) return;
@@ -86,6 +131,7 @@ class _ActionsStorageScreenState extends ConsumerState<ActionsStorageScreen> {
       _repository = name;
       _artifacts = const [];
       _selected.clear();
+      _displayLimit = 80;
       _report = null;
       _error = null;
     });
@@ -130,7 +176,7 @@ class _ActionsStorageScreenState extends ConsumerState<ActionsStorageScreen> {
         content: Text(
           'Repositório: $repo\n'
           'Arquivos selecionados: ${_bytes(bytes)}\n\n'
-          'O GitHub apagará permanentemente estes ZIPs do Actions. '
+          'O GitHub apagará permanentemente os artifacts selecionados. '
           'Se um ZIP contiver APK ou AAB, esse arquivo também será perdido.\n\n'
           'As execuções, o código-fonte e os APKs publicados em Releases NÃO serão excluídos. '
           'Não é possível desfazer.',
@@ -164,13 +210,20 @@ class _ActionsStorageScreenState extends ConsumerState<ActionsStorageScreen> {
       ref.invalidate(repositoryArtifactsProvider(repo));
       if (!mounted) return;
       setState(() {
-        _selected.clear();
+        _selected
+          ..clear()
+          ..addAll(result.remainingIds);
         _report = result.verified
-            ? '${result.deletedIds.length} artifact(s) não aparecem mais na consulta. '
-                '${result.remainingIds.length} ainda aparecem; ${result.failedIds.length} falha(s) na exclusão. '
-                'A atualização da cota oficial pode demorar.'
-            : '${result.deletedIds.length} exclusão(ões) aceita(s) pela API, '
-                'mas não foi possível verificar a listagem depois. Confira antes de repetir.';
+            ? 'Ausência confirmada para ${result.absentIds.length} de ${result.requestedIds.length} IDs. '
+                'Solicitações aceitas: ${result.acceptedIds.length}; já ausentes (HTTP 404): '
+                '${result.alreadyAbsentIds.length}; falhas de solicitação: '
+                '${result.requestFailedIds.length}; ainda visíveis: ${result.remainingIds.length}. '
+                'Os ainda visíveis continuam selecionados para uma nova tentativa. '
+                'A cota oficial pode levar algum tempo para atualizar.'
+            : '${result.acceptedIds.length} solicitação(ões) aceita(s), '
+                '${result.alreadyAbsentIds.length} ID(s) já ausente(s) e '
+                '${result.requestFailedIds.length} falha(s). '
+                'A verificação posterior falhou: não é possível afirmar o que já sumiu.';
       });
     } catch (error) {
       if (mounted) setState(() => _report = 'Falha na limpeza: $error');
@@ -189,6 +242,8 @@ class _ActionsStorageScreenState extends ConsumerState<ActionsStorageScreen> {
   @override
   Widget build(BuildContext context) {
     final bytes = _artifacts.fold<int>(0, (sum, a) => sum + a.sizeBytes);
+    final visibleArtifacts = _visibleArtifacts();
+    final displayedArtifacts = visibleArtifacts.take(_displayLimit).toList(growable: false);
     final selectedBytes = _artifacts.where((a) => _selected.contains(a.id))
         .fold<int>(0, (sum, a) => sum + a.sizeBytes);
     return Scaffold(
@@ -209,9 +264,9 @@ class _ActionsStorageScreenState extends ConsumerState<ActionsStorageScreen> {
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Text('O que realmente é excluído', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+                const Text('Exclusão de builds e APKs', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
                 const SizedBox(height: 8),
-                const Text('Excluir uma execução em Builds elimina a execução, seus logs e TODOS os artifacts vinculados (incluindo ZIPs com APKs). Não exclui APKs de Releases nem código-fonte.'),
+                const Text('Excluir uma execução concluída em Builds apaga a execução, os logs e seus artifacts. Se um artifact ZIP contém APK ou AAB, esse arquivo também deixa de estar disponível ali. APKs de Releases e código-fonte permanecem.'),
                 const SizedBox(height: 8),
                 const Text('Aqui você pode excluir somente artifacts e conservar as execuções. O nome do artifact não confirma quais arquivos estão dentro do ZIP.'),
                 const SizedBox(height: 10),
@@ -232,8 +287,16 @@ class _ActionsStorageScreenState extends ConsumerState<ActionsStorageScreen> {
                 const SizedBox(height: 7),
                 const Text('A soma dos artifacts abaixo é apenas do repositório escolhido; NÃO é a ocupação total nem o saldo da cota GitHub Actions.'),
                 const SizedBox(height: 7),
-                if (_billing == null && _billingError == null) const LinearProgressIndicator(),
+                if (_billingLoading) const LinearProgressIndicator(),
                 if (_billingError != null) Text(_billingError!),
+                if (_billing == null && !_billingLoading) const Text(
+                  'Consulta opcional. O GitHub pode exigir permissão adicional; nenhum dado de cobrança é alterado.',
+                ),
+                TextButton.icon(
+                  onPressed: _billingLoading ? null : _loadBilling,
+                  icon: const Icon(Icons.receipt_long_outlined),
+                  label: const Text('Consultar relatório de uso'),
+                ),
                 if (_billing != null) ...[
                   const Text('Relatório de consumo faturável neste mês (não equivale ao espaço atual):', style: TextStyle(fontWeight: FontWeight.w600)),
                   if (_billing!.isEmpty) const Text('Nenhum item Actions retornado pela API.'),
@@ -269,26 +332,65 @@ class _ActionsStorageScreenState extends ConsumerState<ActionsStorageScreen> {
             padding: EdgeInsets.all(20), child: Center(child: CircularProgressIndicator()),
           ),
           if (_repository != null && !_loadingArtifacts && _error == null) ...[
-            Text('${_artifacts.length} artifact(s) • ${_bytes(bytes)} no repositório',
+            Text('${_artifacts.length} artifact(s) • ${_bytes(bytes)} (tamanho informado pela API)',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 6),
             Text('${_selected.length} selecionado(s) • ${_bytes(selectedBytes)}',
                 style: Theme.of(context).textTheme.bodyMedium),
-            Row(children: [
+            const SizedBox(height: 10),
+            Wrap(spacing: 8, runSpacing: 8, children: [
+              SizedBox(width: 184, child: DropdownButtonFormField<_ArtifactFilter>(
+                value: _filter,
+                isExpanded: true,
+                decoration: const InputDecoration(labelText: 'Filtrar', border: OutlineInputBorder()),
+                items: const [
+                  DropdownMenuItem(value: _ArtifactFilter.all, child: Text('Todos')),
+                  DropdownMenuItem(value: _ArtifactFilter.possibleApk, child: Text('Possíveis APKs')),
+                  DropdownMenuItem(value: _ArtifactFilter.expired, child: Text('Expirados')),
+                  DropdownMenuItem(value: _ArtifactFilter.olderThanWeek, child: Text('Mais de 7 dias')),
+                ],
+                onChanged: _deleting ? null : (next) {
+                  if (next != null) setState(() { _filter = next; _displayLimit = 80; });
+                },
+              )),
+              SizedBox(width: 184, child: DropdownButtonFormField<_ArtifactOrder>(
+                value: _order,
+                isExpanded: true,
+                decoration: const InputDecoration(labelText: 'Ordenar', border: OutlineInputBorder()),
+                items: const [
+                  DropdownMenuItem(value: _ArtifactOrder.newest, child: Text('Mais recentes')),
+                  DropdownMenuItem(value: _ArtifactOrder.oldest, child: Text('Mais antigos')),
+                  DropdownMenuItem(value: _ArtifactOrder.largest, child: Text('Maiores arquivos')),
+                ],
+                onChanged: _deleting ? null : (next) {
+                  if (next != null) setState(() { _order = next; _displayLimit = 80; });
+                },
+              )),
+            ]),
+            const SizedBox(height: 6),
+            Text('${displayedArtifacts.length} exibido(s) de ${visibleArtifacts.length} filtrado(s). A seleção persiste ao mudar o filtro.'),
+            Wrap(spacing: 8, runSpacing: 2, children: [
               TextButton(
-                onPressed: _deleting || _artifacts.isEmpty ? null : () => setState(() => _selected.addAll(_artifacts.map((a) => a.id))),
-                child: const Text('Selecionar todos'),
+                onPressed: _deleting || displayedArtifacts.isEmpty ? null : () =>
+                    setState(() => _selected.addAll(displayedArtifacts.map((a) => a.id))),
+                child: const Text('Selecionar exibidos'),
+              ),
+              TextButton(
+                onPressed: _deleting || _olderArtifactIds().isEmpty ? null : () =>
+                    setState(() => _selected.addAll(_olderArtifactIds())),
+                child: const Text('Selecionar anteriores'),
               ),
               TextButton(
                 onPressed: _deleting || _selected.isEmpty ? null : () => setState(_selected.clear),
                 child: const Text('Limpar seleção'),
               ),
             ]),
+            const Text('“Selecionar anteriores” preserva a execução mais recente e o grupo do provável APK mais recente. Confira os arquivos antes de excluir.'),
             if (_artifacts.isEmpty) const Padding(
               padding: EdgeInsets.all(18),
               child: Text('Nenhum artifact encontrado. Os APKs em Releases, se existirem, não aparecem nesta lista.'),
             ),
-            for (final artifact in _artifacts) Card(
+            for (final artifact in displayedArtifacts) Card(
               child: CheckboxListTile(
                 key: ValueKey('artifact-${artifact.id}'),
                 value: _selected.contains(artifact.id),
@@ -305,6 +407,11 @@ class _ActionsStorageScreenState extends ConsumerState<ActionsStorageScreen> {
                 controlAffinity: ListTileControlAffinity.leading,
               ),
             ),
+            if (visibleArtifacts.length > _displayLimit) TextButton.icon(
+              onPressed: _deleting ? null : () => setState(() => _displayLimit += 80),
+              icon: const Icon(Icons.expand_more_rounded),
+              label: Text('Exibir mais (${visibleArtifacts.length - _displayLimit} restantes)'),
+            ),
           ],
           if (_report != null) Padding(padding: const EdgeInsets.symmetric(vertical: 12), child: Text(_report!)),
           if (_deleting) ...[
@@ -313,12 +420,12 @@ class _ActionsStorageScreenState extends ConsumerState<ActionsStorageScreen> {
           ],
           const SizedBox(height: 12),
           FilledButton.icon(
-            onPressed: _deleting || _loadingArtifacts || _selected.isEmpty ? null : _deleteSelected,
+            onPressed: _deleting || _loadingArtifacts || _error != null || _selected.isEmpty ? null : _deleteSelected,
             icon: const Icon(Icons.delete_forever_outlined),
             label: Text('Excluir ${_selected.length} artifact(s) selecionado(s)'),
           ),
           const SizedBox(height: 8),
-          const Text('Exclusão irreversível. Necessário Actions: write no token (ou escopo repo em PAT clássico). Caches têm cota separada.'),
+          const Text('Exclusão irreversível. Necessário Actions: write (ou repo em PAT clássico). Caches são separados. O tamanho listado não equivale ao espaço faturável recuperado.'),
         ],
       ),
     );

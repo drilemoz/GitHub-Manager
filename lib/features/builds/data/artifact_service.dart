@@ -48,17 +48,31 @@ class ArtifactService {
 
   Future<List<ActionArtifact>> listArtifacts(String repositoryFullName) async {
     final artifacts = <ActionArtifact>[];
+    final seenIds = <int>{};
     for (var page = 1; page <= 100; page++) {
       final response = await _client.get<Map<String, dynamic>>(
         '/repos/$repositoryFullName/actions/artifacts',
         queryParameters: {'per_page': 100, 'page': page},
       );
       final raw = response.data?['artifacts'];
-      if (raw is! List) break;
+      if (raw is! List || raw.any((item) => item is! Map)) {
+        throw const FormatException(
+          'Resposta de artifacts incompleta ou inválida; a ausência de arquivos não pode ser confirmada.',
+        );
+      }
       final pageItems = raw
-          .whereType<Map>()
-          .map((json) => ActionArtifact.fromJson(Map<String, dynamic>.from(json)))
+          .map((json) => ActionArtifact.fromJson(Map<String, dynamic>.from(json as Map)))
           .toList(growable: false);
+      if (pageItems.any((item) => item.id <= 0)) {
+        throw const FormatException('Artifact retornado sem ID válido.');
+      }
+      for (final artifact in pageItems) {
+        if (!seenIds.add(artifact.id)) {
+          throw const FormatException(
+            'Artifacts duplicados entre páginas; refaça a consulta antes de excluir.',
+          );
+        }
+      }
       artifacts.addAll(pageItems);
       if (raw.length < 100) break;
       if (page == 100) {
@@ -77,17 +91,31 @@ class ArtifactService {
     required int runId,
   }) async {
     final artifacts = <ActionArtifact>[];
+    final seenIds = <int>{};
     for (var page = 1; page <= 100; page++) {
       final response = await _client.get<Map<String, dynamic>>(
         '/repos/$repositoryFullName/actions/runs/$runId/artifacts',
         queryParameters: {'per_page': 100, 'page': page},
       );
       final raw = response.data?['artifacts'];
-      if (raw is! List) break;
+      if (raw is! List || raw.any((item) => item is! Map)) {
+        throw const FormatException(
+          'Resposta de artifacts incompleta ou inválida; a ausência de arquivos não pode ser confirmada.',
+        );
+      }
       final pageItems = raw
-          .whereType<Map>()
-          .map((json) => ActionArtifact.fromJson(Map<String, dynamic>.from(json)))
+          .map((json) => ActionArtifact.fromJson(Map<String, dynamic>.from(json as Map)))
           .toList(growable: false);
+      if (pageItems.any((item) => item.id <= 0)) {
+        throw const FormatException('Artifact retornado sem ID válido.');
+      }
+      for (final artifact in pageItems) {
+        if (!seenIds.add(artifact.id)) {
+          throw const FormatException(
+            'Artifacts duplicados entre páginas; refaça a consulta antes de excluir.',
+          );
+        }
+      }
       artifacts.addAll(pageItems);
       if (raw.length < 100) break;
       if (page == 100) {
@@ -95,6 +123,30 @@ class ArtifactService {
       }
     }
     return List<ActionArtifact>.unmodifiable(artifacts);
+  }
+
+  /// Consulta pontual usada para confirmar a exclusão de uma execução sem
+  /// percorrer todos os artifacts de um repositório a cada build apagada.
+  /// 404 representa ausência; outros erros precisam ser informados ao usuário.
+  Future<ActionArtifact?> getArtifactById({
+    required String repositoryFullName,
+    required int artifactId,
+  }) async {
+    try {
+      final response = await _client.get<Map<String, dynamic>>(
+        '/repos/$repositoryFullName/actions/artifacts/$artifactId',
+      );
+      final raw = response.data;
+      if (raw == null) throw const FormatException('Resposta de artifact vazia.');
+      final artifact = ActionArtifact.fromJson(raw);
+      if (artifact.id != artifactId) {
+        throw const FormatException('O GitHub retornou um ID de artifact incompatível.');
+      }
+      return artifact;
+    } on AppException catch (error) {
+      if (error.httpStatus == 404) return null;
+      rethrow;
+    }
   }
 
   /// Busca sob demanda, somente quando a pessoa abre a seleção do APK.

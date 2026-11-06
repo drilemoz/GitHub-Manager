@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:github_manager/core/network/github_api_client.dart';
+import 'package:github_manager/core/errors/app_exception.dart';
 import 'package:github_manager/core/security/secure_storage_service.dart';
 import 'package:github_manager/features/builds/data/actions_storage_service.dart';
 import 'package:github_manager/features/builds/data/artifact_service.dart';
@@ -34,6 +35,8 @@ void main() {
       onProgress: (done, _) => progress.add(done),
     );
     expect(report.verified, isTrue);
+    expect(report.acceptedIds, {11});
+    expect(report.absentIds, {11});
     expect(report.deletedIds, {11});
     expect(report.failedIds, isEmpty);
     expect(progress, [1]);
@@ -51,6 +54,8 @@ void main() {
       artifactIds: [11],
     );
     expect(report.verified, isFalse);
+    expect(report.acceptedIds, {11});
+    expect(report.absentIds, isEmpty); // Não inventa ausência sem consultar.
     expect(report.hasUnresolved, isTrue);
   });
 
@@ -66,6 +71,57 @@ void main() {
     expect(report.verified, isTrue);
     expect(report.remainingIds, {11});
     expect(report.deletedIds, isEmpty);
+    expect(report.hasUnresolved, isTrue);
+  });
+
+  test('HTTP 404 is already absent, not a successful DELETE', () async {
+    final client = _FakeClient();
+    final artifacts = _FakeArtifacts(client)..notFoundIds.add(11);
+    final report = await ActionsStorageService(client, artifacts).deleteSelected(
+      repository: 'owner/repo', artifactIds: [11],
+    );
+    expect(report.acceptedIds, isEmpty);
+    expect(report.alreadyAbsentIds, {11});
+    expect(report.absentIds, {11});
+    expect(report.deletedIds, isEmpty);
+    expect(report.hasUnresolved, isFalse);
+  });
+
+  test('failed DELETE remains unresolved while ID is still present', () async {
+    final client = _FakeClient();
+    final artifacts = _FakeArtifacts(client)
+      ..items = [apkArtifact]
+      ..permissionDenied = true;
+    final report = await ActionsStorageService(client, artifacts).deleteSelected(
+      repository: 'owner/repo', artifactIds: [11],
+    );
+    expect(report.verified, isTrue);
+    expect(report.acceptedIds, isEmpty);
+    expect(report.requestFailedIds, {11});
+    expect(report.remainingIds, {11});
+  });
+
+  test('invalid IDs are skipped without sending a DELETE', () async {
+    final client = _FakeClient();
+    final artifacts = _FakeArtifacts(client);
+    final report = await ActionsStorageService(client, artifacts).deleteSelected(
+      repository: 'owner/repo', artifactIds: [-2, 0],
+    );
+    expect(report.requestedIds, isEmpty);
+    expect(artifacts.deleted, isEmpty);
+  });
+
+  test('retries a stale listing once and then confirms absence', () async {
+    final client = _FakeClient();
+    final artifacts = _FakeArtifacts(client)
+      ..items = [apkArtifact]
+      ..staleReadAfterDelete = true;
+    final report = await ActionsStorageService(client, artifacts).deleteSelected(
+      repository: 'owner/repo', artifactIds: [11],
+    );
+    expect(report.verified, isTrue);
+    expect(report.absentIds, {11});
+    expect(artifacts.listCalls, 2);
   });
 
   test('reads billing usage as report without converting it to quota', () async {
@@ -113,10 +169,17 @@ class _FakeArtifacts extends ArtifactService {
   final deleted = <int>[];
   bool failListing = false;
   bool ignoreDelete = false;
+  bool permissionDenied = false;
+  bool staleReadAfterDelete = false;
+  final Set<int> notFoundIds = <int>{};
+  int listCalls = 0;
+  List<ActionArtifact> staleSnapshot = [];
 
   @override
   Future<List<ActionArtifact>> listArtifacts(String repositoryFullName) async {
     if (failListing) throw StateError('sem conexão');
+    listCalls++;
+    if (staleReadAfterDelete && listCalls == 1) return staleSnapshot;
     return items.toList();
   }
 
@@ -126,6 +189,13 @@ class _FakeArtifacts extends ArtifactService {
     required int artifactId,
   }) async {
     deleted.add(artifactId);
+    if (notFoundIds.contains(artifactId)) {
+      throw const GitHubNotFoundException(httpStatus: 404);
+    }
+    if (permissionDenied) {
+      throw const GitHubPermissionException(httpStatus: 403);
+    }
+    if (staleReadAfterDelete) staleSnapshot = items.toList();
     if (!ignoreDelete) items.removeWhere((item) => item.id == artifactId);
   }
 }

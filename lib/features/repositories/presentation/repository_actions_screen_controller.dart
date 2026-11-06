@@ -368,20 +368,48 @@ mixin _RepositoryActionsStateController on ConsumerState<RepositoryActionsScreen
       });
       await _refresh(silent: true);
       if (!mounted) return;
-      if (result.hasFailures) {
-        showCenteredNotice(
-          context,
-          '${result.deletedCount} excluída(s) • ${result.failedCount} falha(s). ${result.artifactsRemoved} artifact(s) confirmados como removidos. Releases preservadas; confira os avisos de limpeza. As falhas permanecem selecionadas.',
-        );
-      } else if (result.hasWarnings) {
-        showCenteredNotice(
-          context,
-          '${result.deletedCount} execução(ões) excluída(s); ${result.artifactsRemoved} artifact(s) identificado(s) como removido(s). Confira avisos: a limpeza pode não ter sido totalmente verificada. Releases preservadas.',
+      if (result.hasFailures || result.hasWarnings) {
+        final lines = <String>[
+          '${result.deletedCount} execução(ões) excluída(s).',
+          '${result.artifactsRemoved} artifact(s) confirmado(s) como ausentes pela API.',
+          'APKs e outros arquivos publicados em Releases foram preservados.',
+          if (result.failedCount > 0)
+            '${result.failedCount} execução(ões) NÃO excluída(s); seguem selecionadas.',
+          if (result.failureMessages.isNotEmpty) ...[
+            '',
+            'Falhas de exclusão:',
+            for (final entry in result.failureMessages.entries.take(8))
+              '• Run ${entry.key}: ${entry.value}',
+          ],
+          if (result.warnings.isNotEmpty) ...[
+            '',
+            'Conferências pendentes:',
+            for (final warning in result.warnings.take(12)) '• $warning',
+            if (result.warnings.length > 12)
+              '• E mais ${result.warnings.length - 12} aviso(s).',
+          ],
+        ];
+        await showDialog<void>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Resultado da limpeza de Builds'),
+            content: SingleChildScrollView(
+              child: SelectableText(lines.join('\n')),
+            ),
+            actions: [
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('Entendi'),
+              ),
+            ],
+          ),
         );
       } else {
         showCenteredNotice(
           context,
-          '${result.deletedCount} execução(ões) excluída(s) e ${result.artifactsRemoved} artifact(s) vinculado(s) removido(s). APKs em Releases preservados.',
+          '${result.deletedCount} execução(ões) excluída(s) e '
+          '${result.artifactsRemoved} artifact(s) confirmado(s) como ausentes. '
+          'APKs de Releases preservados.',
         );
       }
     } catch (error) {

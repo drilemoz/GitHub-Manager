@@ -1,3 +1,13 @@
+# GitHub Manager 2.0.139+200153
+
+- Base da atualização: 2.0.138+200152. Preserva toda a árvore e os workflows.
+- Novo utilitário `StorageSelectionPolicy`: seleção de artifacts antigos por data e run, protegendo run mais recente e o grupo do último APK provável. Datas, nomes e grupos incertos não são apagados automaticamente.
+- `ActionsStorageService.deleteSelected` expõe requested, accepted, alreadyAbsent, requestFailed, absent, remaining e verified separadamente. Pede no máximo uma segunda listagem após pequena espera quando 204 ainda aparece na API. Não confunde API Billing com ocupação atual.
+- `BuildCleanupService` faz GET pontual por ID de artifact após DELETE do run; tenta apagar somente os IDs persistentes. Não percorre o repositório inteiro a cada run. Se inventário/verificação falha, resultado tem warnings em vez de contagem fictícia.
+- UI lista por até 80 itens, filtros e ordenação, controla erros e progresso, consulta billing sob demanda e permite selecionar arquivos antigos ou manualmente. Na limpeza de runs, avisos aparecem em diálogo detalhado.
+- Listagens de artifacts com JSON inesperado, IDs inválidos ou repetidos entre páginas falham explicitamente; não são tomadas como ausência comprovada.
+- Manter CI: `flutter pub get --enforce-lockfile`, `flutter analyze`, `flutter test`, `flutter build apk`. Não houve build Flutter local nem teste remoto real de DELETE neste ambiente.
+
 # GitHub Manager 2.0.138+200152
 
 - Novo `PlayAabDiscoveryService` com consultas de Release + Artifact independentes; seleção heurística testada no domínio `play_aab_discovery.dart`.

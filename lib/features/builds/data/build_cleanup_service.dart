@@ -96,88 +96,75 @@ class BuildCleanupService {
   }) async {
     final warnings = <String>[];
     List<ActionArtifact> linkedArtifacts = const <ActionArtifact>[];
+    var inspected = false;
 
-    // Descobrimos os vínculos antes de apagar a execução, pois o endpoint
-    // específico do run deixa de existir após a exclusão.
+    // Inventaria todos os artifacts da execução ANTES de removê-la.
     onStage?.call(BuildCleanupStage.inspectingArtifacts);
     try {
       linkedArtifacts = await _artifacts.listArtifactsForRun(
         repositoryFullName: repositoryFullName,
         runId: run.id,
       );
+      inspected = true;
     } catch (error) {
       warnings.add(
-        'Não foi possível conferir previamente os artifacts da build: ${_message(error)}',
+        'Não foi possível inventariar os artifacts antes da exclusão: ${_message(error)}',
       );
     }
 
-    // A associação por commit/versão pode ser compartilhada por mais de uma
-    // execução. Não usamos essa heurística em nenhuma ação destrutiva.
+    // Releases são recursos independentes: nunca inferir vínculo só pelo SHA.
     onStage?.call(BuildCleanupStage.inspectingReleaseApks);
-
-    // Primeiro removemos a execução. Se isso falhar, nenhuma Release é tocada.
     onStage?.call(BuildCleanupStage.deletingRun);
     await _client.delete<void>(
       '/repos/$repositoryFullName/actions/runs/${run.id}',
     );
 
-    final knownArtifactIds = linkedArtifacts.map((item) => item.id).toSet();
-    final unresolvedArtifactIds = <int>{};
-    var extraArtifactsRemoved = 0;
-    var verified = false;
-
-    // O GitHub deve remover os artifacts junto com o run. Fazemos uma
-    // verificação adicional na coleção do repositório para cobrir atraso de
-    // consistência ou comportamento inesperado da API.
+    // Busca cada ID previamente conhecido, em vez de varrer a coleção inteira
+    // (potencialmente milhares de artifacts) para cada run no lote.
     onStage?.call(BuildCleanupStage.cleaningArtifacts);
-    try {
-      final remaining = (await _artifacts.listArtifacts(repositoryFullName))
-          .where((artifact) => artifact.workflowRunId == run.id)
-          .toList(growable: false);
-      for (final artifact in remaining) {
+    var removedArtifacts = 0;
+    if (!inspected) {
+      warnings.add(
+        'Execução excluída; remoção dos artifacts não verificável porque a consulta inicial falhou.',
+      );
+    } else {
+      for (final artifact in linkedArtifacts) {
         try {
-          await _artifacts.deleteArtifact(
+          var existing = await _artifacts.getArtifactById(
             repositoryFullName: repositoryFullName,
             artifactId: artifact.id,
           );
-          if (!knownArtifactIds.contains(artifact.id)) {
-            extraArtifactsRemoved++;
-          }
-        } catch (error) {
-          if (!_isNotFound(error)) {
-            unresolvedArtifactIds.add(artifact.id);
-            warnings.add(
-              'O artifact ${artifact.name} ainda aparece no GitHub e não pôde ser removido: ${_message(error)}',
+          if (existing != null) {
+            // Consistência eventual: se o artifact ainda aparecer, tenta a
+            // exclusão explícita e consulta novamente antes de contabilizar.
+            try {
+              await _artifacts.deleteArtifact(
+                repositoryFullName: repositoryFullName,
+                artifactId: artifact.id,
+              );
+            } catch (error) {
+              if (!_isNotFound(error)) rethrow;
+            }
+            existing = await _artifacts.getArtifactById(
+              repositoryFullName: repositoryFullName,
+              artifactId: artifact.id,
             );
           }
+          if (existing == null) {
+            removedArtifacts++;
+          } else {
+            warnings.add(
+              'Artifact ${artifact.id} ainda aparece na API após a exclusão da execução.',
+            );
+          }
+        } catch (error) {
+          warnings.add(
+            'Execução excluída, mas não foi possível confirmar o artifact ${artifact.id}: ${_message(error)}',
+          );
         }
       }
-      // Só contabiliza artifacts como confirmados quando a consulta final
-      // mostra que não há mais IDs associados ao run. A resposta 204 do
-      // DELETE do run, isoladamente, não prova a limpeza da coleção.
-      final afterCleanup = remaining.isEmpty
-          ? remaining
-          : (await _artifacts.listArtifacts(repositoryFullName))
-              .where((artifact) => artifact.workflowRunId == run.id)
-              .toList(growable: false);
-      if (afterCleanup.isNotEmpty) {
-        warnings.add(
-          '${afterCleanup.length} artifact(s) ainda aparecem na API após a limpeza. Confira novamente antes de considerar o espaço liberado.',
-        );
-      }
-      verified = afterCleanup.isEmpty && unresolvedArtifactIds.isEmpty;
-    } catch (error) {
-      warnings.add(
-        'A build foi excluída, mas não foi possível confirmar a limpeza dos artifacts: ${_message(error)}',
-      );
     }
 
-    final removedArtifacts = verified
-        ? knownArtifactIds.length + extraArtifactsRemoved
-        : 0;
-
-    // Releases continuam disponíveis e podem ser gerenciadas explicitamente
-    // na tela de APKs/Releases do repositório.
     onStage?.call(BuildCleanupStage.cleaningReleaseApks);
 
     return BuildCleanupResult(

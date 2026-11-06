@@ -88,6 +88,51 @@ void main() {
     expect(events, contains('delete-artifact:999'));
   });
 
+  test('verifies by ID without scanning the entire repository', () async {
+    final events = <String>[];
+    final client = _FakeGitHubApiClient(events);
+    final artifacts = _FakeArtifactService(client, events)
+      ..runArtifacts = const [
+        ActionArtifact(id: 51, name: 'app-apk', sizeBytes: 44,
+          expired: false, createdAt: null, workflowRunId: 77),
+      ];
+    final result = await BuildCleanupService(client, artifacts).deleteBuild(
+      repositoryFullName: 'owner/repo', run: run(),
+    );
+    expect(result.artifactsRemoved, 1);
+    expect(artifacts.repositoryScanCalls, 0);
+    expect(events, contains('get-artifact:51'));
+  });
+
+  test('reports unverifiable artifacts when initial inventory fails', () async {
+    final events = <String>[];
+    final client = _FakeGitHubApiClient(events);
+    final artifacts = _FakeArtifactService(client, events)..failInventory = true;
+    final result = await BuildCleanupService(client, artifacts).deleteBuild(
+      repositoryFullName: 'owner/repo', run: run(),
+    );
+    expect(events, contains('delete-run:77'));
+    expect(result.artifactsRemoved, 0);
+    expect(result.hasWarnings, isTrue);
+    expect(artifacts.repositoryScanCalls, 0);
+  });
+
+  test('does not claim cleanup after verification failure', () async {
+    final events = <String>[];
+    final client = _FakeGitHubApiClient(events);
+    final artifacts = _FakeArtifactService(client, events)
+      ..runArtifacts = const [
+        ActionArtifact(id: 52, name: 'apk', sizeBytes: 120,
+          expired: false, createdAt: null, workflowRunId: 77),
+      ]
+      ..failVerification = true;
+    final result = await BuildCleanupService(client, artifacts).deleteBuild(
+      repositoryFullName: 'owner/repo', run: run(),
+    );
+    expect(result.artifactsRemoved, 0);
+    expect(result.hasWarnings, isTrue);
+  });
+
   test('bulk cleanup reports determinate progress from 0 to 100 percent', () async {
     final events = <String>[];
     final client = _FakeGitHubApiClient(events);
@@ -140,17 +185,37 @@ class _FakeArtifactService extends ArtifactService {
   List<ActionArtifact> runArtifacts = const [];
   List<ActionArtifact> repositoryArtifactsAfterRunDelete = const [];
   List<ReleaseAsset> releaseApks = const [];
+  bool failInventory = false;
+  bool failVerification = false;
+  int repositoryScanCalls = 0;
 
   @override
   Future<List<ActionArtifact>> listArtifactsForRun({
     required String repositoryFullName,
     required int runId,
-  }) async =>
-      runArtifacts;
+  }) async {
+    if (failInventory) throw StateError('sem autorização para listar');
+    return runArtifacts;
+  }
 
   @override
-  Future<List<ActionArtifact>> listArtifacts(String repositoryFullName) async =>
-      repositoryArtifactsAfterRunDelete;
+  Future<ActionArtifact?> getArtifactById({
+    required String repositoryFullName,
+    required int artifactId,
+  }) async {
+    events.add('get-artifact:$artifactId');
+    if (failVerification) throw StateError('conexão caiu');
+    for (final artifact in repositoryArtifactsAfterRunDelete) {
+      if (artifact.id == artifactId) return artifact;
+    }
+    return null;
+  }
+
+  @override
+  Future<List<ActionArtifact>> listArtifacts(String repositoryFullName) async {
+    repositoryScanCalls++;
+    return repositoryArtifactsAfterRunDelete;
+  }
 
   @override
   Future<List<ReleaseAsset>> findReleaseApksForBuild({

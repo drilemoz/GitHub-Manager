@@ -1,4 +1,14 @@
-# GitHub Manager 2.0.138
+# GitHub Manager 2.0.139
+## Limpeza mais segura e navegação de artifacts (2.0.139)
+
+- **Builds → Armazenamento Actions:** filtro por possíveis APKs, arquivos expirados e com mais de sete dias; ordenação por data ou tamanho e listagem em grupos de até 80 itens.
+- **Selecionar anteriores:** preserva artifacts da execução mais recente identificada e do grupo do provável APK mais recente. A regra usa nome/data/run informados pela API, não inspeciona o ZIP; nenhum arquivo é excluído sem confirmação.
+- A exclusão individual separa **requisição aceita** (HTTP 204), **já ausente** (HTTP 404), **ausência confirmada pela listagem** e **falhas**. IDs ainda visíveis continuam selecionados. Uma segunda consulta breve reduz erros de consistência eventual.
+- Ao excluir uma execução, o serviço verifica os artifacts pelos IDs já inventariados; deixa de varrer todos os artifacts do repositório a cada exclusão. Em falhas de consulta, mostra ressalvas e não inventa arquivos removidos.
+- O relatório de uso do GitHub é consultado **somente ao tocar no botão** e nunca é exibido como espaço livre instantâneo. Caches, logs, releases e uso faturável são diferenciados.
+- Listagens de artifacts inválidas ou com IDs duplicados são rejeitadas em vez de serem tratadas como vazias; avisos detalhados aparecem na exclusão de uma ou várias builds.
+- Testes adicionados para 404/403, visibilidade atrasada, falha de conferência, seleção conservadora e verificação por ID.
+
 ## Armazenamento do GitHub Actions e limpeza verificável (2.0.138)
 
 - Em Builds, acesse **Armazenamento Actions** pelo ícone de caixa. Também disponível nas Builds de cada repositório.
