@@ -69,6 +69,78 @@ class ProjectSafetyCheck {
       repositoryInfo.versionCode,
     );
 
+    // A versioned selected ZIP has a strong filename hint. If its actual
+    // internal identity differs, the selector may have supplied cached bytes
+    // from another project. Do not permit a manual "force" bypass.
+    final filenameHint = _versionedFilenameProjectHint(project.name);
+    final rootHint = _versionedFilenameProjectHint('${project.commonRoot ?? ''}.zip');
+    if (filenameHint.isNotEmpty && rootHint.isNotEmpty && rootHint != filenameHint) {
+      return ProjectSafetyCheck(
+        blocked: true,
+        warning: true,
+        identitySource: 'arquivo escolhido ≠ pasta raiz do ZIP',
+        versionComparison: versionComparison,
+        message:
+            'BLOQUEADO: a pasta principal do ZIP pertence a outro projeto. '
+            'Selecione novamente para evitar sincronizar arquivos incorretos.',
+      );
+    }
+    // No display metadata? Validate the actual package name (pubspec.yaml,
+    // composer.json, package.json) against a versioned selected filename.
+    // Namespaced packages may use vendor/name or org.package.name.
+    final fallbackPackageHint = project.packageName == null
+        ? ''
+        : _canonicalProjectName(
+            project.packageName!.split(RegExp(r'[/.]')).last,
+            stripVersionSuffix: true,
+          );
+    if (filenameHint.isNotEmpty &&
+        explicitZipName.isEmpty &&
+        fallbackPackageHint.isNotEmpty &&
+        filenameHint != fallbackPackageHint) {
+      return ProjectSafetyCheck(
+        blocked: true,
+        warning: true,
+        identitySource: 'arquivo escolhido ≠ pacote interno',
+        versionComparison: versionComparison,
+        message:
+            'BLOQUEADO: o pacote declarado dentro do ZIP não corresponde '
+            'ao arquivo escolhido. A seleção pode ter retornado dados de '
+            'outro projeto; selecione novamente.',
+      );
+    }
+    if (filenameHint.isNotEmpty &&
+        explicitZipName.isNotEmpty &&
+        filenameHint != explicitZipName) {
+      return ProjectSafetyCheck(
+        blocked: true,
+        warning: true,
+        identitySource: 'arquivo escolhido ≠ conteúdo identificado',
+        versionComparison: versionComparison,
+        message:
+            'BLOQUEADO: o nome do ZIP escolhido aponta para outro projeto '
+            'diferente dos metadados internos. Isso pode indicar cache trocado '
+            'do seletor Android. Cancele e selecione novamente; nada será enviado.',
+      );
+    }
+
+    final strongMatch = (appIdsComparable && !appIdDiffers) ||
+        (packagesComparable && !packageDiffers);
+    if (explicitZipName.isNotEmpty &&
+        !explicitNameMatches &&
+        !strongMatch) {
+      return ProjectSafetyCheck(
+        blocked: true,
+        warning: true,
+        identitySource: 'projeto identificado ≠ repositório',
+        versionComparison: versionComparison,
+        message:
+            'BLOQUEADO: o projeto identificado no ZIP não corresponde ao '
+            'repositório de destino. Selecione o ZIP correto. Renomeações '
+            'intencionais precisam ser feitas fora deste envio automático.',
+      );
+    }
+
     if (appIdDiffers && packageDiffers) {
       return ProjectSafetyCheck(
         blocked: true,
@@ -76,7 +148,7 @@ class ProjectSafetyCheck {
         identitySource: 'applicationId + pacote divergentes',
         versionComparison: versionComparison,
         message:
-            'Dois identificadores fortes apontam para outro projeto: applicationId e pacote são diferentes. O envio ainda pode ser forçado com confirmação extra.',
+            'Dois identificadores fortes apontam para outro projeto: applicationId e pacote são diferentes. O envio foi bloqueado para proteger o repositório.',
       );
     }
 
@@ -223,6 +295,15 @@ class ProjectSafetyCheck {
     }
 
     return ProjectVersionComparison.unknown;
+  }
+
+  static String _versionedFilenameProjectHint(String filename) {
+    final basename = filename.replaceFirst(RegExp(r'\.zip$', caseSensitive: false), '');
+    final match = RegExp(
+      r'^(.+?)[-_. ]+v?\d+\.\d+(?:\.\d+)?(?:[-+._ ].*)?$',
+      caseSensitive: false,
+    ).firstMatch(basename);
+    return match == null ? '' : _normalize(match.group(1));
   }
 
   static String _canonicalProjectName(

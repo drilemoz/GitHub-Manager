@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:github_manager/core/background/build_monitor_service.dart';
 import 'package:github_manager/core/errors/app_exception.dart';
 import 'package:github_manager/features/projects/data/git_project_upload_service.dart';
+import 'package:github_manager/features/projects/data/local_project_service.dart';
 import 'package:github_manager/features/projects/domain/zip_project.dart';
 import 'package:github_manager/features/repositories/data/repository_git_service.dart';
 import 'package:github_manager/features/repositories/domain/repository_git_models.dart';
@@ -93,7 +94,8 @@ class UploadManagerService {
         _automaticRecoveryEnabled = automaticRecoveryEnabled ??
             (() => UploadRecoverySettings.isAutomaticRecoveryEnabled()),
         _persistDebounce = persistDebounce,
-        _runBackgroundQueue = true {
+        _runBackgroundQueue = true,
+        _requireZipFingerprint = true {
     if (restoreHistory) {
       unawaited(_restoreHistory());
     } else {
@@ -119,7 +121,8 @@ class UploadManagerService {
         _automaticRecoveryEnabled =
             automaticRecoveryEnabled ?? (() async => true),
         _persistDebounce = persistDebounce,
-        _runBackgroundQueue = runBackgroundQueue {
+        _runBackgroundQueue = runBackgroundQueue,
+        _requireZipFingerprint = false {
     if (restoreHistory) {
       unawaited(_restoreHistory());
     } else {
@@ -135,6 +138,7 @@ class UploadManagerService {
   final Future<bool> Function() _automaticRecoveryEnabled;
   final Duration _persistDebounce;
   final bool _runBackgroundQueue;
+  final bool _requireZipFingerprint;
   final _controller = StreamController<List<ManagedUpload>>.broadcast();
   final Completer<void> _restoreCompleter = Completer<void>();
   final List<ManagedUpload> _items = [];
@@ -159,6 +163,12 @@ class UploadManagerService {
     required String branch,
     ManagedUploadBuildPolicy buildPolicy = ManagedUploadBuildPolicy.automatic,
   }) {
+    if (_requireZipFingerprint && (project.sha256 == null || project.sha256!.isEmpty)) {
+      throw const InvalidZipException(
+        'O ZIP não foi verificado. Selecione novamente antes de enviar.',
+        code: 'UPLOAD_ZIP_UNVERIFIED',
+      );
+    }
     final duplicate = _items.where((item) => item.isActive).firstWhereOrNull(
           (item) =>
               item.repositoryFullName == repositoryFullName &&
@@ -181,6 +191,7 @@ class UploadManagerService {
       projectName: project.identityLabel,
       projectType: project.projectType,
       archiveBytes: project.archiveBytes,
+      archiveSha256: project.sha256,
       uncompressedBytes: project.uncompressedBytes,
       fileCount: project.fileCount,
       folderCount: project.folderCount,
@@ -443,6 +454,13 @@ class UploadManagerService {
     await _persistHistory();
 
     try {
+      if (_requireZipFingerprint &&
+          (item.archiveSha256 == null || item.archiveSha256!.isEmpty)) {
+        throw const InvalidZipException(
+          'Envio antigo sem impressão digital do ZIP. Selecione o projeto novamente.',
+          code: 'UPLOAD_ZIP_LEGACY_UNVERIFIED',
+        );
+      }
       await _prepareDurableZip(item);
       item.phase = 'Preparando sincronização';
       item.addLog('Sincronização iniciada');
@@ -854,19 +872,26 @@ class UploadManagerService {
     final destination = File(
       p.join(directory.path, '${_safeFileToken(item.id)}.zip'),
     );
+    final expectedSha = item.archiveSha256;
 
-    if (item.zipPath == destination.path && await destination.exists()) {
+    Future<bool> matches(File file) async {
+      if (!await file.exists() || await file.length() != item.archiveBytes) {
+        return false;
+      }
+      return expectedSha == null ||
+          await LocalProjectService.sha256OfFile(file) == expectedSha;
+    }
+
+    if (item.zipPath == destination.path && await matches(destination)) {
       return;
     }
-    if (await destination.exists()) {
-      final length = await destination.length();
-      if (length == item.archiveBytes) {
-        item.zipPath = destination.path;
-        item.addLog('Cópia segura do ZIP restaurada');
-        return;
-      }
-      await destination.delete();
+    if (await matches(destination)) {
+      item.zipPath = destination.path;
+      await LocalProjectService.discardPreviewPath(item.sourceZipPath);
+      item.addLog('Cópia do ZIP restaurada e integridade conferida');
+      return;
     }
+    if (await destination.exists()) await destination.delete();
 
     var source = File(item.zipPath);
     if (!await source.exists() && item.sourceZipPath != item.zipPath) {
@@ -874,27 +899,24 @@ class UploadManagerService {
     }
     if (!await source.exists()) {
       throw const InvalidZipException(
-        'O ZIP original não está mais disponível no aparelho. Selecione o projeto novamente.',
+        'O ZIP original não está mais disponível. Selecione novamente.',
         code: 'UPLOAD_ZIP_MISSING',
       );
     }
-    if (await source.length() != item.archiveBytes) {
+    if (!await matches(source)) {
       throw const InvalidZipException(
-        'O ZIP mudou depois da conferência. Selecione o arquivo novamente para evitar enviar conteúdo diferente do aprovado.',
-        code: 'UPLOAD_ZIP_CHANGED',
+        'O conteúdo do ZIP não corresponde ao arquivo aprovado. Envio interrompido.',
+        code: 'UPLOAD_ZIP_HASH_MISMATCH',
       );
     }
 
     final temporary = File('${destination.path}.tmp');
-    if (await temporary.exists()) {
-      await temporary.delete();
-    }
+    if (await temporary.exists()) await temporary.delete();
     try {
       await source.copy(temporary.path);
-      if (await temporary.length() != item.archiveBytes) {
-        await temporary.delete();
+      if (!await matches(temporary) || !await matches(source)) {
         throw const InvalidZipException(
-          'Não foi possível preparar uma cópia íntegra do ZIP para o envio.',
+          'A cópia do ZIP está diferente do arquivo aprovado. Nada foi enviado.',
           code: 'UPLOAD_ZIP_COPY_INVALID',
         );
       }
@@ -902,16 +924,16 @@ class UploadManagerService {
     } on InvalidZipException {
       rethrow;
     } on FileSystemException {
-      if (await temporary.exists()) {
-        await temporary.delete();
-      }
       throw const InvalidZipException(
-        'Não foi possível criar a cópia segura do ZIP. Verifique o espaço livre do aparelho e tente novamente.',
+        'Não foi possível preparar a cópia íntegra do ZIP. Verifique o armazenamento.',
         code: 'UPLOAD_ZIP_COPY_FAILED',
       );
+    } finally {
+      if (await temporary.exists()) await temporary.delete();
     }
     item.zipPath = destination.path;
-    item.addLog('Cópia segura do ZIP pronta para retomada');
+    await LocalProjectService.discardPreviewPath(item.sourceZipPath);
+    item.addLog('Cópia segura do ZIP confirmada por SHA-256');
   }
 
   Future<Directory> _queueDirectory() async {

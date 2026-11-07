@@ -1,3 +1,7 @@
+# 2.0.141 — ZIP com integridade obrigatória
+
+`version: 2.0.141+200155`. Cada atualização gera versionCode 200155; `docs/RELEASE_2.0.141.md` documenta a proteção.
+
 ### 2.0.140
 
 A versão canônica é `version: 2.0.140+200154` (versionName 2.0.140; Android versionCode 200154). Corrige a falha do teste da tela de Configurações no workflow Android APK #129, ordena cronologicamente as últimas três notas e valida a ordem já no script de versionamento. Preserva a limpeza verificável de artifacts/APKs de execuções. Consulte `docs/RELEASE_2.0.140.md`.
@@ -124,7 +128,7 @@ A fonte canônica é `pubspec.yaml`.
 
 Versão atual:
 
-`version: 2.0.129+200143`
+`version: 2.0.141+200155`
 
 - antes do `+`: versionName exibido ao usuário;
 - depois do `+`: versionCode Android;

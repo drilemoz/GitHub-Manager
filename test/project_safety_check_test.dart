@@ -193,14 +193,14 @@ void main() {
     expect(result.identitySource, contains('divergentes'));
   });
 
-  test('display name mismatch is only a warning when strong identity is absent', () {
+  test('explicit identity mismatch blocks automatic upload even without strong IDs', () {
     final result = ProjectSafetyCheck.compare(
       project: preview(projectName: 'Nome Antigo'),
       repository: repository,
       repositoryInfo: info(projectName: 'Nome Novo'),
     );
 
-    expect(result.blocked, isFalse);
+    expect(result.blocked, isTrue);
     expect(result.warning, isTrue);
   });
 
@@ -213,6 +213,45 @@ void main() {
 
     expect(result.blocked, isFalse);
     expect(result.warning, isTrue);
+  });
+
+  test('selected versioned filename cannot conceal another internal project', () {
+    final result = ProjectSafetyCheck.compare(
+      project: preview(
+        name: 'Social-Lite-v0.1.1-fonte-completo.zip',
+        projectName: 'Uai Cortes',
+        version: '0.1.99',
+      ),
+      repository: repository,
+      repositoryInfo: info(),
+    );
+    expect(result.blocked, isTrue);
+    expect(result.identitySource, contains('arquivo escolhido'));
+  });
+
+  test('matching filename and internal identity continue normally', () {
+    final result = ProjectSafetyCheck.compare(
+      project: preview(
+        name: 'Social-Lite-v0.1.1-fonte-completo.zip',
+        projectName: 'Social Lite',
+      ),
+      repository: repository,
+      repositoryInfo: info(),
+    );
+    expect(result.blocked, isFalse);
+  });
+
+  test('internal pubspec package catches swapped ZIP without display metadata', () {
+    final result = ProjectSafetyCheck.compare(
+      project: preview(
+        name: 'Social-Lite-v0.1.1.zip',
+        packageName: 'uaicortes',
+      ),
+      repository: repository,
+      repositoryInfo: info(),
+    );
+    expect(result.blocked, isTrue);
+    expect(result.identitySource, contains('pacote interno'));
   });
 
   group('SemVer', () {

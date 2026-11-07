@@ -94,6 +94,7 @@ class _ManagedUploadState {
         path: item.zipPath,
         name: item.zipName,
         archiveBytes: item.archiveBytes,
+        sha256: item.archiveSha256,
         uncompressedBytes: item.uncompressedBytes,
         fileCount: item.fileCount,
         folderCount: item.folderCount,

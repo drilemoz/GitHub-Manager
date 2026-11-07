@@ -1,3 +1,9 @@
+# GitHub Manager 2.0.141+200155 — proteção de ZIP
+
+- Novo snapshot privado por seleção, fingerprint SHA-256 e verificaçao durante prévia/cópia/envio. Fila guarda `archiveSha256` para retomadas; legado sem hash bloqueia a sincronização na implementação de produção.
+- `ProjectSafetyCheck` bloqueia incompatibilidade do nome versionado, metadados internos e destino; tela não permite forçar envio bloqueado. Prévia obrigatória e remoções exigem digitação do destino.
+- Testes: `verified_zip_selection_test.dart`, `verified_upload_ui_contract_test.dart`, `project_safety_check_test.dart`. Validar CI Flutter/Android e teste físico, sem assumir que a regressão do FilePicker foi reproduzida em ambiente emulado.
+
 # GitHub Manager 2.0.140+200154
 
 - Base: ZIP da versão 2.0.139+200153, compilação Android APK #129 com **285 testes aprovados / 1 reprovado**.

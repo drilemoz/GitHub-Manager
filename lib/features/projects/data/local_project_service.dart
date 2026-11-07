@@ -1,10 +1,15 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
+
+import 'package:crypto/crypto.dart';
 
 import 'package:archive/archive.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:github_manager/core/errors/app_exception.dart';
 import 'package:github_manager/features/projects/domain/zip_project.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 class LocalProjectService {
   static const maxArchiveBytes = 300 * 1024 * 1024;
@@ -13,27 +18,118 @@ class LocalProjectService {
   static const maxFileBytes = 95 * 1024 * 1024;
   static const _maxIdentityFileBytes = 1024 * 1024;
 
+  /// FilePicker may return a reused cache pathname. Freeze the selected bytes
+  /// immediately, before any network/dialog work, and never analyze its mutable
+  /// picker path again. The private snapshot survives app suspension.
   Future<ZipProjectPreview?> pickAndAnalyzeZip() async {
     final selected = await FilePicker.pickFile(
       type: FileType.custom,
       allowedExtensions: const ['zip'],
     );
-    if (selected == null) {
-      return null;
-    }
-    final path = selected.path;
-    if (path == null || path.isEmpty) {
+    if (selected == null) return null;
+    final selectedPath = selected.path;
+    if (selectedPath == null || selectedPath.isEmpty) {
       throw const InvalidZipException(
         'Não foi possível acessar o ZIP selecionado.',
         code: 'ZIP_PATH_UNAVAILABLE',
       );
     }
-    return analyzeZip(path, displayName: selected.name);
+
+    final source = File(selectedPath);
+    if (!await source.exists()) {
+      throw const InvalidZipException(
+        'O arquivo escolhido não está disponível. Selecione novamente.',
+        code: 'ZIP_SOURCE_MISSING',
+      );
+    }
+    final size = await source.length();
+    if (size <= 0 || size > maxArchiveBytes) {
+      throw const InvalidZipException(
+        'O ZIP está vazio ou ultrapassa o limite local de 300 MB.',
+        code: 'ZIP_SIZE_LIMIT',
+      );
+    }
+
+    final directory = await _snapshotDirectory();
+    await directory.create(recursive: true);
+    final random = Random.secure();
+    final nonce = List<int>.generate(16, (_) => random.nextInt(256))
+        .map((value) => value.toRadixString(16).padLeft(2, '0'))
+        .join();
+    final snapshot = File(p.join(directory.path, 'selection_$nonce.zip'));
+    final temporary = File('${snapshot.path}.tmp');
+    try {
+      final originalSha = await sha256OfFile(source);
+      await source.copy(temporary.path);
+      final snapshotSha = await sha256OfFile(temporary);
+      // Check again: the picker cache might change while being copied.
+      if (await temporary.length() != size ||
+          await source.length() != size ||
+          originalSha != snapshotSha ||
+          await sha256OfFile(source) != originalSha) {
+        throw const InvalidZipException(
+          'O arquivo do seletor mudou durante a leitura. Selecione o ZIP novamente.',
+          code: 'ZIP_PICKER_CONTENT_CHANGED',
+        );
+      }
+      await temporary.rename(snapshot.path);
+      return await analyzeZip(
+        snapshot.path,
+        displayName: p.basename(selected.name),
+        managedSnapshot: true,
+      );
+    } catch (_) {
+      if (await temporary.exists()) await temporary.delete();
+      if (await snapshot.exists()) await snapshot.delete();
+      rethrow;
+    }
+  }
+
+  static Future<String> sha256OfFile(File file) async {
+    final digest = await sha256.bind(file.openRead()).first;
+    return digest.toString();
+  }
+
+  static Future<void> verifyFingerprint(ZipProjectPreview project) async {
+    final expected = project.sha256;
+    if (expected == null || expected.isEmpty) {
+      throw const InvalidZipException(
+        'O ZIP ainda não possui uma verificação de integridade. Selecione novamente.',
+        code: 'UPLOAD_ZIP_UNVERIFIED',
+      );
+    }
+    final file = File(project.path);
+    if (!await file.exists() ||
+        await file.length() != project.archiveBytes ||
+        await sha256OfFile(file) != expected) {
+      throw const InvalidZipException(
+        'O ZIP mudou após a seleção. Envio cancelado para proteger o repositório.',
+        code: 'UPLOAD_ZIP_HASH_MISMATCH',
+      );
+    }
+  }
+
+  /// Never delete an arbitrary user file, even if a caller passes its path.
+  static Future<void> discardPreviewPath(String path) async {
+    final normalized = p.normalize(p.absolute(path));
+    if (p.basename(p.dirname(normalized)) != 'verified_zip_selections' ||
+        !p.basename(normalized).startsWith('selection_') ||
+        p.extension(normalized).toLowerCase() != '.zip') return;
+    final directory = await _snapshotDirectory();
+    if (p.dirname(normalized) != p.normalize(p.absolute(directory.path))) return;
+    final file = File(normalized);
+    if (await file.exists()) await file.delete();
+  }
+
+  static Future<Directory> _snapshotDirectory() async {
+    final root = await getApplicationSupportDirectory();
+    return Directory(p.join(root.path, 'verified_zip_selections'));
   }
 
   Future<ZipProjectPreview> analyzeZip(
     String path, {
     String? displayName,
+    bool managedSnapshot = false,
   }) async {
     final source = File(path);
     if (!await source.exists()) {
@@ -47,6 +143,7 @@ class LocalProjectService {
       );
     }
 
+    final initialSha = await sha256OfFile(source);
     final input = InputFileStream(path);
     Archive archive;
     try {
@@ -133,6 +230,13 @@ class LocalProjectService {
     if (files == 0) {
       throw const InvalidZipException('O ZIP não contém arquivos para enviar.');
     }
+    if (await source.length() != archiveBytes ||
+        await sha256OfFile(source) != initialSha) {
+      throw const InvalidZipException(
+        'O ZIP mudou durante a análise. Selecione o arquivo novamente.',
+        code: 'ZIP_CHANGED_DURING_ANALYSIS',
+      );
+    }
 
     final commonRoot = _findCommonRoot(paths);
     final identity = _detectIdentity(identityTexts, commonRoot);
@@ -143,6 +247,8 @@ class LocalProjectService {
     return ZipProjectPreview(
       path: path,
       name: resolvedDisplayName,
+      sha256: initialSha,
+      managedSnapshot: managedSnapshot,
       archiveBytes: archiveBytes,
       uncompressedBytes: totalBytes,
       fileCount: files,

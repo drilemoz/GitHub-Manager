@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class UpdateWhatsNewScreen extends StatelessWidget {
-  static const releaseNotesVersion = '2.0.140';
+  static const releaseNotesVersion = '2.0.141';
 
   const UpdateWhatsNewScreen({
     required this.versionLabel,
@@ -70,20 +70,20 @@ class UpdateWhatsNewScreen extends StatelessWidget {
                     const SizedBox(height: 24),
                     const _UpdateItem(
                       icon: Icons.shield_outlined,
-                      title: 'Histórico de atualizações corrigido',
-                      description: 'As três mudanças exibidas em Configurações agora aparecem em ordem: 2.0.140, 2.0.139 e 2.0.138.'
+                      title: 'Proteção contra envio de ZIP incorreto',
+                      description: 'O ZIP selecionado recebe SHA-256 e uma cópia privada. Identidades divergentes impedem envio para o projeto errado.'
                     ),
                     const SizedBox(height: 12),
                     const _UpdateItem(
                       icon: Icons.filter_list_rounded,
-                      title: 'Verificação mais cedo no workflow',
-                      description: 'O versionamento e a ordem das notas passam por uma verificação antes de executar todos os testes do Flutter.'
+                      title: 'Prévia obrigatória e confirmação de remoções',
+                      description: 'Se a prévia falhar, o envio é bloqueado. Remoções exigem digitar o repositório de destino.'
                     ),
                     const SizedBox(height: 12),
                     const _UpdateItem(
                       icon: Icons.speed_outlined,
-                      title: 'Limpeza de artifacts preservada',
-                      description: 'Mantidos filtros, seleção manual, confirmação e verificação de exclusão de artifacts/APKs das execuções.'
+                      title: 'Envios antigos exigem nova verificação',
+                      description: 'Sincronizações antigas sem SHA-256 precisam de nova seleção. Builds já iniciadas permanecem independentes.'
                     ),
                   ],
                 ),

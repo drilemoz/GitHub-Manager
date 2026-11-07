@@ -309,9 +309,10 @@ mixin _RepositoryDetailScreenActions on ConsumerState<RepositoryDetailScreen> {
   }
 
   Future<void> _sendBuild(GitHubRepository repository) async {
+    ZipProjectPreview? project;
+    var queued = false;
     try {
-      final project =
-          await ref.read(localProjectServiceProvider).pickAndAnalyzeZip();
+      project = await ref.read(localProjectServiceProvider).pickAndAnalyzeZip();
       if (project == null || !mounted) return;
 
       final selectedBranch = await _chooseUploadBranch(repository);
@@ -383,6 +384,7 @@ mixin _RepositoryDetailScreenActions on ConsumerState<RepositoryDetailScreen> {
         branch: targetBranch.name,
         buildPolicy: buildPolicy,
       );
+      queued = true; // Queue owns the snapshot until its durable copy exists.
       if (!mounted) return;
 
       await showDialog<void>(
@@ -392,6 +394,10 @@ mixin _RepositoryDetailScreenActions on ConsumerState<RepositoryDetailScreen> {
       );
     } catch (error) {
       if (mounted) _showError(error);
+    } finally {
+      if (!queued && project != null && project.managedSnapshot) {
+        await LocalProjectService.discardPreviewPath(project.path);
+      }
     }
   }
 
@@ -574,6 +580,7 @@ mixin _RepositoryDetailScreenActions on ConsumerState<RepositoryDetailScreen> {
       repository: repository,
       repositoryInfo: repositoryInfo,
     );
+    final mustBlock = check.blocked || syncPreview == null;
     var buildPolicy = branchHasApkWorkflow == false
         ? ManagedUploadBuildPolicy.skipNoWorkflow
         : ManagedUploadBuildPolicy.automatic;
@@ -582,7 +589,7 @@ mixin _RepositoryDetailScreenActions on ConsumerState<RepositoryDetailScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-        title: Text(check.blocked ? 'Risco alto detectado' : 'Conferir envio'),
+        title: Text(mustBlock ? 'Envio bloqueado' : 'Conferir envio'),
         content: AdaptiveDialogBody(
           child: SingleChildScrollView(
             child: Column(
@@ -598,6 +605,21 @@ mixin _RepositoryDetailScreenActions on ConsumerState<RepositoryDetailScreen> {
                 Text(
                   repository.fullName,
                   style: Theme.of(dialogContext).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 8),
+                _BuildSafetyRow(
+                  label: 'Arquivo escolhido no Android',
+                  value: project.name,
+                  icon: Icons.folder_zip_outlined,
+                ),
+                _BuildSafetyRow(
+                  label: 'Integridade do ZIP (SHA-256)',
+                  value: project.sha256 == null
+                      ? 'Não verificada'
+                      : project.sha256!.length > 16
+                          ? '${project.sha256!.substring(0, 16)}…'
+                          : project.sha256!,
+                  icon: Icons.fingerprint_rounded,
                 ),
                 const SizedBox(height: 12),
                 _BuildSafetyRow(
@@ -633,7 +655,7 @@ mixin _RepositoryDetailScreenActions on ConsumerState<RepositoryDetailScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: check.blocked
+                    color: mustBlock
                         ? Theme.of(dialogContext).colorScheme.errorContainer
                         : check.warning
                             ? Theme.of(dialogContext).colorScheme.tertiaryContainer
@@ -643,13 +665,17 @@ mixin _RepositoryDetailScreenActions on ConsumerState<RepositoryDetailScreen> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(check.blocked
+                      Icon(mustBlock
                           ? Icons.block_rounded
                           : check.warning
                               ? Icons.warning_amber_rounded
                               : Icons.verified_rounded),
                       const SizedBox(width: 9),
-                      Expanded(child: Text(check.message,
+                      Expanded(child: Text(
+                          syncPreview == null
+                              ? 'BLOQUEADO: não foi possível calcular as alterações. '
+                                  'Nenhum envio é permitido sem conferir a prévia dos arquivos.'
+                              : check.message,
                           style: const TextStyle(fontWeight: FontWeight.w700))),
                     ],
                   ),
@@ -783,46 +809,82 @@ mixin _RepositoryDetailScreenActions on ConsumerState<RepositoryDetailScreen> {
             child: const Text('Cancelar'),
           ),
           FilledButton.icon(
-            onPressed: check.blocked
-                ? () async {
-                    final forced = await showDialog<bool>(
-                      context: dialogContext,
-                      builder: (confirmContext) => AlertDialog(
-                        title: const Text('Forçar envio para este repositório?'),
-                        content: Text(
-                          'Identificadores fortes divergentes. O ZIP será sincronizado em '
-                          '${repository.fullName} → ${targetBranch.name} e poderá substituir '
-                          'ou remover arquivos existentes. Confira o destino.',
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(confirmContext, false),
-                            child: const Text('Voltar'),
-                          ),
-                          FilledButton.icon(
-                            onPressed: () => Navigator.pop(confirmContext, true),
-                            icon: const Icon(Icons.warning_amber_rounded),
-                            label: const Text('Forçar envio'),
-                          ),
-                        ],
-                      ),
-                    );
-                    if (forced == true && dialogContext.mounted) {
+            onPressed: mustBlock
+                ? null
+                : () async {
+                    if (syncPreview!.deletedCount > 0) {
+                      final accepted = await _confirmRemovalWithRepositoryName(
+                        dialogContext,
+                        repository.fullName,
+                        syncPreview!.deletedCount,
+                      );
+                      if (accepted != true || !dialogContext.mounted) return;
+                    }
+                    if (dialogContext.mounted) {
                       Navigator.pop(dialogContext,
                           _ConfirmZipResult.submit(buildPolicy));
                     }
-                  }
-                : () => Navigator.pop(dialogContext,
-                      _ConfirmZipResult.submit(buildPolicy)),
-            icon: Icon(check.blocked || check.warning
+                  },
+            icon: Icon(mustBlock || check.warning
                 ? Icons.warning_amber_rounded : Icons.cloud_upload_outlined),
-            label: Text(check.blocked
-                ? 'Revisar e enviar'
-                : check.warning ? 'Enviar mesmo assim' : 'Enviar versão'),
+            label: Text(mustBlock
+                ? 'Envio bloqueado'
+                : (syncPreview?.deletedCount ?? 0) > 0
+                    ? 'Conferir remoções'
+                    : check.warning ? 'Enviar mesmo assim' : 'Enviar versão'),
           ),
         ],
       ),
     );
+  }
+
+  Future<bool?> _confirmRemovalWithRepositoryName(
+    BuildContext parent,
+    String fullName,
+    int deletedCount,
+  ) async {
+    final typed = TextEditingController();
+    try {
+      return await showDialog<bool>(
+        context: parent,
+        builder: (dialog) => StatefulBuilder(
+          builder: (context, refresh) => AlertDialog(
+            title: const Text('Confirmar remoção de arquivos'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('O envio removerá $deletedCount arquivo(s) de $fullName. '
+                    'Digite o nome completo do repositório para autorizar.'),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: typed,
+                  onChanged: (_) => refresh(() {}),
+                  decoration: InputDecoration(
+                    border: const OutlineInputBorder(),
+                    labelText: 'Repositório (owner/nome)',
+                    hintText: fullName,
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialog, false),
+                child: const Text('Cancelar'),
+              ),
+              FilledButton(
+                onPressed: typed.text.trim() == fullName
+                    ? () => Navigator.pop(dialog, true) : null,
+                child: const Text('Autorizar remoções'),
+              ),
+            ],
+          ),
+        ),
+      );
+    } finally {
+      typed.dispose();
+    }
   }
 
   Future<void> _showSyncPreview(

@@ -45,6 +45,7 @@ class ManagedUpload {
     this.applicationId,
     this.version,
     this.versionCode,
+    this.archiveSha256,
     this.buildPolicy = ManagedUploadBuildPolicy.automatic,
     this.phase = 'Aguardando envio',
     this.current = 0,
@@ -107,6 +108,7 @@ class ManagedUpload {
   final String? applicationId;
   final String? version;
   final int? versionCode;
+  final String? archiveSha256;
   ManagedUploadBuildPolicy buildPolicy;
   ManagedUploadStatus status;
   final DateTime createdAt;

@@ -1,3 +1,10 @@
+## 2.0.141+200155 — 2026-11-06
+
+- Protege seleção/sincronização de ZIP com snapshot privado e SHA-256 em cada etapa, inclusive fila e retomadas.
+- Bloqueia divergência entre arquivo selecionado, identidade interna e repositório, sem desvio via “forçar envio”.
+- Prévia obrigatória e autorização de remoções digitando o repositório completo.
+- Incrementa versionCode para 200155 e inclui testes de regressão e notas de segurança. Build Android pendente.
+
 ## 2.0.140+200154 — 2026-11-06
 
 - Corrige a falha no workflow **Android APK #129**: `system_ui_settings_contract_test.dart` encontrou as notas de 2.0.137 e 2.0.138 invertidas no histórico de Configurações.

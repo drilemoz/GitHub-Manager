@@ -17,6 +17,8 @@ class ZipProjectPreview {
     this.versionSource,
     this.inferredVersion,
     this.hasWorkflowFiles = false,
+    this.sha256,
+    this.managedSnapshot = false,
   });
 
   final String path;
@@ -36,6 +38,10 @@ class ZipProjectPreview {
   final String? versionSource;
   final String? inferredVersion;
   final bool hasWorkflowFiles;
+  /// SHA-256 of the exact bytes approved in the preview.
+  final String? sha256;
+  /// True only for private selection copies created by LocalProjectService.
+  final bool managedSnapshot;
 
   String get identityLabel =>
       projectName?.trim().isNotEmpty == true

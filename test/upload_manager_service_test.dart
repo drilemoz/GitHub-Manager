@@ -756,12 +756,58 @@ void main() {
     expect(item.status, ManagedUploadStatus.noChanges);
   });
 
+  test('wrong fingerprint blocks queued upload before touching GitHub', () async {
+    var uploadCalls = 0;
+    Future<ProjectUploadResult> upload({
+      required ZipProjectPreview project,
+      required String repositoryFullName,
+      required String branch,
+      required String commitMessage,
+      void Function(ProjectUploadProgress progress)? onProgress,
+      required Map<String, String> reusableBlobShas,
+      void Function(String path, String sha)? onBlobUploaded,
+      required ProjectUploadMethod method,
+      required bool allowAutomaticRecovery,
+    }) async {
+      uploadCalls++;
+      throw StateError('Must never call GitHub for altered ZIP');
+    }
+    Future<RepositoryBuildLaunchResult> ensure({
+      required String repositoryFullName,
+      required String branch,
+      required String commitSha,
+      void Function(String status)? onStatus,
+      required int verificationAttempts,
+      required Duration verificationDelay,
+      required Duration postDispatchDelay,
+    }) async => throw StateError('No build expected');
+
+    final zip = File('${temp.path}/source.zip')..writeAsBytesSync([9]);
+    final manager = UploadManagerService.forTest(
+      uploadZip: upload,
+      ensureBuild: ensure,
+      historyFileFactory: () async => File('${temp.path}/fingerprint-history.json'),
+      queueDirectoryFactory: () async => Directory('${temp.path}/queue'),
+    );
+    addTearDown(manager.dispose);
+    final item = manager.startBuild(
+      project: _preview(zip.path, 'Wrong', sha256: List<String>.filled(64, '0').join()),
+      repositoryFullName: 'owner/repo',
+      branch: 'main',
+    );
+    await manager.waitUntilIdle();
+    expect(item.status, ManagedUploadStatus.failed);
+    expect(item.errorCode, 'UPLOAD_ZIP_HASH_MISMATCH');
+    expect(uploadCalls, 0);
+  });
+
 }
 
-ZipProjectPreview _preview(String path, String name) => ZipProjectPreview(
+ZipProjectPreview _preview(String path, String name, {String? sha256}) => ZipProjectPreview(
       path: path,
       name: '$name.zip',
       archiveBytes: 1,
+      sha256: sha256,
       uncompressedBytes: 1,
       fileCount: 1,
       folderCount: 0,

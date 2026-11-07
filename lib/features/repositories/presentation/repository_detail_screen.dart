@@ -26,6 +26,7 @@ import 'package:github_manager/features/projects/domain/project_safety_check.dar
 import 'package:github_manager/features/projects/domain/upload_identification_diagnosis.dart';
 import 'package:github_manager/features/projects/domain/zip_project.dart';
 import 'package:github_manager/features/projects/presentation/project_providers.dart';
+import 'package:github_manager/features/projects/data/local_project_service.dart';
 import 'package:github_manager/features/repositories/domain/github_repository.dart';
 import 'package:github_manager/features/repositories/domain/repository_git_models.dart';
 import 'package:github_manager/features/repositories/domain/repository_project_info.dart';

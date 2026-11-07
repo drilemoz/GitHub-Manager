@@ -47,6 +47,7 @@ class GitProjectUploadService {
     required String repositoryFullName,
     required String branch,
   }) async {
+    await LocalProjectService.verifyFingerprint(project);
     final existingEntries = await _loadExistingEntriesForPreview(
       repositoryFullName: repositoryFullName,
       branch: branch,
@@ -198,6 +199,7 @@ class GitProjectUploadService {
     ProjectUploadMethod method = ProjectUploadMethod.incremental,
     bool allowAutomaticRecovery = true,
   }) async {
+    await LocalProjectService.verifyFingerprint(project);
     onProgress?.call(
       ProjectUploadProgress(
         phase: 'Tentativa com ${method.label}',
