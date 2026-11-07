@@ -372,16 +372,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                   children: const [
                     _ChangeNote(
+                      version: '2.0.142',
+                      text: 'Corrige falso bloqueio para pacotes com versão e atualiza testes sem remover proteções de envio.',
+                    ),
+                    _ChangeNote(
                       version: '2.0.141',
                       text: 'Bloqueia ZIP suspeito, fixa os bytes selecionados com SHA-256 e exige confirmação de remoções.',
                     ),
                     _ChangeNote(
                       version: '2.0.140',
                       text: 'Corrige a ordem das três alterações e impede que novas versões com histórico fora de sequência avancem no workflow.',
-                    ),
-                    _ChangeNote(
-                      version: '2.0.139',
-                      text: 'Limpeza Actions com filtros, seleção conservadora, resultados de exclusão precisos e verificação por ID.',
                     ),
                   ],
                 ),

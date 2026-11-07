@@ -1,3 +1,9 @@
+## 2.0.142+200156 — 2026-11-06
+- Corrige falso bloqueio de envio para nomes de pacote com versão (`social-lite-0.1.1`): normaliza sufixo de versão ANTES de dividir namespaces.
+- Atualiza teste de UI que exigia o diálogo perigoso de forçar envio (removido na 2.0.141) para assegurar o bloqueio e confirmação de remoções.
+- Adiciona testes para pacote versionado com namespace e divergência real, preservando proteção SHA-256, prévia e restrições de exclusão.
+- Workflow 131 da 2.0.141: 292 testes passaram, 2 falharam; compilação/CI da 2.0.142 ainda pendente.
+
 ## 2.0.141+200155 — 2026-11-06
 
 - Protege seleção/sincronização de ZIP com snapshot privado e SHA-256 em cada etapa, inclusive fila e retomadas.

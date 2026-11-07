@@ -1,6 +1,10 @@
-# 2.0.141 — ZIP com integridade obrigatória
+# 2.0.142 — Corrige regressão de identificação de ZIP
 
-`version: 2.0.141+200155`. Cada atualização gera versionCode 200155; `docs/RELEASE_2.0.141.md` documenta a proteção.
+`version: 2.0.142+200156`. Cada atualização gera versionCode 200156; `docs/RELEASE_2.0.142.md` documenta o ajuste mantendo os bloqueios.
+
+### 2.0.141
+
+A versão canônica foi `version: 2.0.141+200155` (Android versionCode 200155). Introduziu cópia privada do ZIP selecionado, verificação SHA-256, bloqueios de identidade divergente, prévia obrigatória e confirmação de remoções. Consulte `docs/RELEASE_2.0.141.md`. O workflow 131 identificou dois testes a corrigir na 2.0.142.
 
 ### 2.0.140
 
@@ -128,7 +132,7 @@ A fonte canônica é `pubspec.yaml`.
 
 Versão atual:
 
-`version: 2.0.141+200155`
+`version: 2.0.142+200156`
 
 - antes do `+`: versionName exibido ao usuário;
 - depois do `+`: versionCode Android;

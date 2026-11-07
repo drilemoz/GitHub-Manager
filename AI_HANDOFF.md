@@ -1,3 +1,7 @@
+# GitHub Manager 2.0.142+200156 — CI 131 e testes de segurança
+
+Workflow 131 falhou com 292 testes aprovados e 2 falhos. Ajustado falso bloqueio no ProjectSafetyCheck para packageName versionado, corrigindo split por ponto antes da retirada do sufixo de versão. Atualizado contrato UI para conferir envio bloqueado, confirmação digitada de remoções e ausência de bypass manual. Testes adicionais de pacote scoped. Próxima etapa: executar Flutter test/analyze/assembleDebug no CI; SDK Flutter não disponível neste ambiente. Base 2.0.141.
+
 # GitHub Manager 2.0.141+200155 — proteção de ZIP
 
 - Novo snapshot privado por seleção, fingerprint SHA-256 e verificaçao durante prévia/cópia/envio. Fila guarda `archiveSha256` para retomadas; legado sem hash bloqueia a sincronização na implementação de produção.

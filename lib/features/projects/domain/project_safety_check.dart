@@ -88,12 +88,10 @@ class ProjectSafetyCheck {
     // No display metadata? Validate the actual package name (pubspec.yaml,
     // composer.json, package.json) against a versioned selected filename.
     // Namespaced packages may use vendor/name or org.package.name.
-    final fallbackPackageHint = project.packageName == null
-        ? ''
-        : _canonicalProjectName(
-            project.packageName!.split(RegExp(r'[/.]')).last,
-            stripVersionSuffix: true,
-          );
+    // Remove the version suffix *before* splitting namespace components.
+    // Otherwise social-lite-0.1.1 is split into social-lite-0, 1, 1 and
+    // incorrectly classified as a different package ("1").
+    final fallbackPackageHint = _packageProjectHint(project.packageName);
     if (filenameHint.isNotEmpty &&
         explicitZipName.isEmpty &&
         fallbackPackageHint.isNotEmpty &&
@@ -295,6 +293,20 @@ class ProjectSafetyCheck {
     }
 
     return ProjectVersionComparison.unknown;
+  }
+
+  static String _packageProjectHint(String? rawPackageName) {
+    var value = (rawPackageName ?? '').trim();
+    if (value.isEmpty) return '';
+    value = value.replaceFirst(
+      RegExp(
+        r'(?:[-_.\s]+v?\d+(?:\.\d+){1,3}(?:[-+._a-z0-9].*)?)$',
+        caseSensitive: false,
+      ),
+      '',
+    );
+    // e.g. @vendor/social-lite, com.example.social_lite or social-lite.
+    return _canonicalProjectName(value.split(RegExp(r'[/.]')).last);
   }
 
   static String _versionedFilenameProjectHint(String filename) {

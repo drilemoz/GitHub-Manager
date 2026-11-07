@@ -94,6 +94,28 @@ void main() {
     expect(result.warning, isFalse);
   });
 
+  test('namespaced versioned package clue is normalized before splitting', () {
+    final result = ProjectSafetyCheck.compare(
+      project: preview(packageName: '@vendor/social-lite-0.1.1'),
+      repository: repository,
+      repositoryInfo: info(packageName: '@vendor/social-lite-0.1.0'),
+    );
+
+    expect(result.blocked, isFalse);
+    expect(result.warning, isFalse);
+  });
+
+  test('different namespaced package is blocked when filename claims another project', () {
+    final result = ProjectSafetyCheck.compare(
+      project: preview(packageName: '@vendor/uai-cortes-0.1.99'),
+      repository: repository,
+      repositoryInfo: info(packageName: '@vendor/social-lite-0.1.0'),
+    );
+
+    expect(result.blocked, isTrue);
+    expect(result.identitySource, contains('pacote interno'));
+  });
+
   test('GitHub Manager export suffix is ignored as a weak filename clue', () {
     final result = ProjectSafetyCheck.compare(
       project: preview(

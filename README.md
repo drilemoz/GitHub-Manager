@@ -1,6 +1,6 @@
-# GitHub Manager 2.0.141
+# GitHub Manager 2.0.142
 
-**Versão:** `2.0.141+200155`. Segurança da seleção ZIP: cópia privada, SHA-256, prévia obrigatória e bloqueio de destino divergente. Veja `docs/RELEASE_2.0.141.md`.
+**Versão:** `2.0.142+200156`. Corrige falso bloqueio de pacotes versionados no seletor ZIP e ajusta a suíte de testes mantendo cópia privada, SHA-256 e bloqueios de identidade. Veja `docs/RELEASE_2.0.142.md`.
 
 # GitHub Manager 2.0.140
 ## Correção do workflow Android APK #129 (2.0.140)
