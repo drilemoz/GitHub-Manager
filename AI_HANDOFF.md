@@ -1,3 +1,6 @@
+# GitHub Manager 2.0.143+200157 — integração Drive (2026-11-09)
+Implementação primeira etapa. Acrescentados google_sign_in, leitura Drive API v3, pastas por repositório/branch, verificação por SHA-256 e prévia, política de publicação conservadora e fila de uploads. Serviço DriveSyncForegroundWatcher consulta ao abrir/retomar o app ou durante uso, nunca via headless WorkManager. Ver docs/GOOGLE_DRIVE_SYNC.md. Sem Flutter local/CI verificada nesta entrega; `pubspec.lock` deve ser atualizado no Flutter 3.47.1 e restaurado `--enforce-lockfile` em seguida. Nenhum token de Google é salvo manualmente.
+
 # GitHub Manager 2.0.142+200156 — CI 131 e testes de segurança
 
 Workflow 131 falhou com 292 testes aprovados e 2 falhos. Ajustado falso bloqueio no ProjectSafetyCheck para packageName versionado, corrigindo split por ponto antes da retirada do sufixo de versão. Atualizado contrato UI para conferir envio bloqueado, confirmação digitada de remoções e ausência de bypass manual. Testes adicionais de pacote scoped. Próxima etapa: executar Flutter test/analyze/assembleDebug no CI; SDK Flutter não disponível neste ambiente. Base 2.0.141.

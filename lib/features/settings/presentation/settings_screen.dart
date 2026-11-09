@@ -117,6 +117,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             ),
           ),
           const SizedBox(height: 18),
+          const _SectionTitle('Integrações'),
+          Card(child: ListTile(
+            leading: const Icon(Icons.cloud_sync_outlined),
+            title: const Text('Sincronização Google Drive'),
+            subtitle: const Text('Vincular pastas, conferir novas versões e enviar ZIPs ao GitHub.'),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => context.push('/drive-sync'),
+          )),
+          const SizedBox(height: 18),
           const _SectionTitle('Notificações'),
           Card(
             child: Column(
@@ -372,16 +381,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                   children: const [
                     _ChangeNote(
+                      version: '2.0.143',
+                      text: 'Inicia integração Google Drive com autenticação, vínculos de pasta e sincronização segura de ZIPs.',
+                    ),
+                    _ChangeNote(
                       version: '2.0.142',
-                      text: 'Corrige falso bloqueio para pacotes com versão e atualiza testes sem remover proteções de envio.',
+                      text: 'Corrige falso bloqueio para pacotes versionados e atualiza testes de segurança.',
                     ),
                     _ChangeNote(
                       version: '2.0.141',
                       text: 'Bloqueia ZIP suspeito, fixa os bytes selecionados com SHA-256 e exige confirmação de remoções.',
                     ),
                     _ChangeNote(
-                      version: '2.0.140',
-                      text: 'Corrige a ordem das três alterações e impede que novas versões com histórico fora de sequência avancem no workflow.',
+                      
                     ),
                   ],
                 ),

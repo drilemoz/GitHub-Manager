@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:github_manager/features/builds/presentation/global_builds_screen.dart';
 import 'package:github_manager/features/builds/presentation/actions_storage_screen.dart';
 import 'package:github_manager/features/downloads/presentation/downloads_screen.dart';
+import 'package:github_manager/features/drive_sync/presentation/drive_sync_screen.dart';
 import 'package:github_manager/features/home/presentation/profile_screen.dart';
 import 'package:github_manager/features/help/presentation/help_screen.dart';
 import 'package:github_manager/features/issues/presentation/repository_issues_screen.dart';
@@ -51,6 +52,7 @@ final appRouter = GoRouter(
         ),
       ],
     ),
+    GoRoute(path: '/drive-sync', builder: (_, _) => const DriveSyncScreen()),
     GoRoute(
       path: '/downloads',
       builder: (_, state) => DownloadsScreen(

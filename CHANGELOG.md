@@ -1,3 +1,10 @@
+## 2.0.143+200157 — 2026-11-09
+- Inicia sincronização Drive → GitHub com OAuth Google Sign-In 7.2.0, pastas do Drive, vínculos por repo/branch e leitura somente de ZIP.
+- Baixa ZIP para cópia privada, valida SHA-256 e identidade, exige versão interna estritamente nova, metadados do GitHub e permissões conclusivas, sem remoções; qualquer ambiguidade vai ao fluxo manual.
+- Integra a fila de uploads e persiste o ID de envio pendente para evitar reenvios. Opt-in de verificação automática em primeiro plano a cada 30 minutos e na retomada do app, com intervalo mínimo de 15 minutos.
+- Não executa sincronização com o app fechado. OAuth requer Google Cloud configurado; Flutter/Gradle e autenticação Google não foram testados localmente.
+- Dependência nova exige regenerar e versionar `pubspec.lock` em Flutter 3.47.1; CI usa `flutter pub get` até isso ocorrer. Veja docs/GOOGLE_DRIVE_SYNC.md.
+
 ## 2.0.142+200156 — 2026-11-06
 - Corrige falso bloqueio de envio para nomes de pacote com versão (`social-lite-0.1.1`): normaliza sufixo de versão ANTES de dividir namespaces.
 - Atualiza teste de UI que exigia o diálogo perigoso de forçar envio (removido na 2.0.141) para assegurar o bloqueio e confirmação de remoções.

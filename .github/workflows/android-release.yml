@@ -60,7 +60,9 @@ jobs:
           KEYEOF
 
       - name: Dependências
-        run: flutter pub get --enforce-lockfile
+        # Dependência Google Sign-In introduzida nesta versão. O lockfile
+        # exige resolução na CI; restaurar --enforce-lockfile após commit.
+        run: flutter pub get
 
       - name: Validar versão
         run: bash tool/check_version_sync.sh
@@ -85,7 +87,8 @@ jobs:
       - name: Compilar APK oficial universal
         env:
           GRADLE_OPTS: -Dorg.gradle.vfs.watch=false
-        run: flutter build apk --release --no-pub
+          GOOGLE_WEB_CLIENT_ID: ${{ vars.GOOGLE_WEB_CLIENT_ID }}
+        run: flutter build apk --release --no-pub --dart-define="GOOGLE_WEB_CLIENT_ID=$GOOGLE_WEB_CLIENT_ID"
 
       - name: Verificar APK e certificado oficial
         shell: bash

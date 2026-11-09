@@ -1,3 +1,7 @@
+# 2.0.143 — Integração inicial Google Drive
+
+`version: 2.0.143+200157` é a fonte canônica de versionName/versionCode. Incremento sequencial sobre 2.0.142+200156. Consulte `docs/RELEASE_2.0.143.md`. Flutter SDK não presente no ambiente local, portanto o lockfile ainda precisa de resolução real no CI.
+
 # 2.0.142 — Corrige regressão de identificação de ZIP
 
 `version: 2.0.142+200156`. Cada atualização gera versionCode 200156; `docs/RELEASE_2.0.142.md` documenta o ajuste mantendo os bloqueios.

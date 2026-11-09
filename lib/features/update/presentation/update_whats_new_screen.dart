@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class UpdateWhatsNewScreen extends StatelessWidget {
-  static const releaseNotesVersion = '2.0.142';
+  static const releaseNotesVersion = '2.0.143';
 
   const UpdateWhatsNewScreen({
     required this.versionLabel,
@@ -70,20 +70,20 @@ class UpdateWhatsNewScreen extends StatelessWidget {
                     const SizedBox(height: 24),
                     const _UpdateItem(
                       icon: Icons.shield_outlined,
-                      title: 'Corrige identificação de pacotes versionados',
-                      description: 'Nomes de pacotes como social-lite-0.1.1 deixam de causar bloqueio falso durante a verificação do ZIP.'
+                      title: 'Google Drive: conectar e vincular pastas',
+                      description: 'Associe uma pasta do Drive a um repositório/branch e consulte o ZIP sem baixá-lo manualmente pelo seletor.'
                     ),
                     const SizedBox(height: 12),
                     const _UpdateItem(
                       icon: Icons.filter_list_rounded,
-                      title: 'Proteções de envio mantidas',
-                      description: 'Envios com identidade divergente continuam bloqueados. A prévia é obrigatória e remoções precisam de confirmação.'
+                      title: 'Comparação de versão com travas de segurança',
+                      description: 'Só publica ZIP com versão interna mais nova, identidade e permissões confirmadas, sem remoções. Casos incertos exigem o fluxo manual.'
                     ),
                     const SizedBox(height: 12),
                     const _UpdateItem(
                       icon: Icons.speed_outlined,
-                      title: 'Testes de segurança sincronizados',
-                      description: 'Os testes agora verificam o bloqueio correto, a ausência da opção de forçar envio e pacotes com versões.'
+                      title: 'Sincronização opcional em primeiro plano',
+                      description: 'Verifique ao tocar no botão ou habilite conferências ao abrir/retomar o aplicativo. Execução com o app fechado ainda não está disponível.'
                     ),
                   ],
                 ),
