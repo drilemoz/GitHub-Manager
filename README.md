@@ -1,4 +1,7 @@
-# GitHub Manager 2.0.147
+# GitHub Manager 2.0.148
+
+> Versão 2.0.148+200162: correção do contrato visual do workflow Android APK #137. Os novos cantos dos cartões de projeto e Google Drive da 2.0.147 foram mantidos; o teste agora aceita somente exceções específicas, com quantidades exatas, sem flexibilizar outras telas. Não muda o código de produção. Flutter/Android precisam ser revalidados no Actions.
+
 
 > Versão 2.0.147+200161: login Google Drive configurável no próprio app (ID Web e diagnóstico SHA-1); APK instalado verificado separadamente; versão remota igual sem versionCode é apenas correspondência provável; tela do repositório reorganizada. OAuth Google Cloud ainda exige cadastro de pacote e certificado, consentimento e Drive API ativada.
 

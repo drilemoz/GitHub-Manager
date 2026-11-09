@@ -1,3 +1,10 @@
+## 2.0.148+200162 — 2026-11-09
+
+- Corrige o teste `global_corner_radius_contract_test.dart` que bloqueou o Android APK #137 após **316 testes aprovados e 1 reprovado**.
+- Reconhece apenas os cantos arredondados efetivamente introduzidos nas telas de projeto e Google Drive na 2.0.147, com whitelist de arquivos, raios e contagens; preserva 4px no restante e pills de 99/999.
+- Evita contagem dupla de `BorderRadius` pela expressão de `Radius`; nenhuma alteração no código de produção.
+- Sincroniza versionName `2.0.148`, versionCode `200162`, tela de Novidades, histórico de Configurações e release. Build/teste Flutter ainda pendente de CI.
+
 ## 2.0.147+200161 — 2026-11-09
 
 - Google Drive: permite informar o ID de cliente OAuth Web na própria tela, com validação, persistência, inicialização tardia e orientação específica para o erro `serverClientId must be provided on Android`. Exibe o SHA-1 real do certificado que assinou o APK instalado para cadastro da credencial OAuth Android; oferece link oficial de configuração e aviso de reinício quando o ID muda.

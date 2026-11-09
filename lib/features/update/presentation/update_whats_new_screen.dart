@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class UpdateWhatsNewScreen extends StatelessWidget {
-  static const releaseNotesVersion = '2.0.147';
+  static const releaseNotesVersion = '2.0.148';
 
   const UpdateWhatsNewScreen({
     required this.versionLabel,
@@ -70,8 +70,8 @@ class UpdateWhatsNewScreen extends StatelessWidget {
                     const SizedBox(height: 24),
                     const _UpdateItem(
                       icon: Icons.cloud_done_outlined,
-                      title: 'Google Drive: configuração OAuth no aplicativo',
-                      description: 'Insira o Client ID Web e copie a SHA-1 do APK instalado para registrar o login Android no Google Cloud.',
+                      title: 'Correção dos testes visuais da versão 2.0.147',
+                      description: 'O contrato de cantos reconhece somente os cartões redesenhados nas telas do projeto e do Drive, mantendo a validação global.',
                     ),
                     const SizedBox(height: 12),
                     const _UpdateItem(

@@ -1,3 +1,7 @@
+# GitHub Manager 2.0.148+200162 — corrige contrato visual do workflow #137 (2026-11-09)
+
+O workflow #137 aprovou `flutter analyze` e 316 testes, mas falhou em `test/global_corner_radius_contract_test.dart` por exigir raio 4 em cartões redesenhados na 2.0.147. Corrigido teste com exceção restrita aos dois arquivos de UI e contagens exatas de raios 12/14/16; regex de `Radius.circular` não duplica `BorderRadius.circular`. Sem mudanças em lógica de produção. Versão e documentação sincronizadas. Revalidar no GitHub Actions (Flutter indisponível localmente).
+
 # GitHub Manager 2.0.147+200161 — Google Drive OAuth, APK e UI (2026-11-09)
 
 A versão 2.0.147 deriva integralmente da 2.0.146. Corrige a falta de configuração OAuth em tempo de execução para Google Drive: Client ID Web validado e persistido, cadastro de credencial Android orientado pelo SHA-1 do APK instalado, e erro amigável. O app não gera IDs OAuth nem certificados. Redesenha a tela do projeto e do Drive e distingue versão igual sem versionCode remoto de APK efetivamente confirmado. Preserva upload manual/automático e as proteções. Testes Flutter, build Android e login em dispositivo não foram executados no ambiente local sem Flutter e credenciais OAuth.

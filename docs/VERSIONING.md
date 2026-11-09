@@ -1,3 +1,7 @@
+# 2.0.148 — Corrige contrato visual da UI do workflow #137
+
+`version: 2.0.148+200162` é a versão canônica. Incremento sequencial sobre `2.0.147+200161`. Consulte `docs/RELEASE_2.0.148.md`.
+
 # 2.0.147 — Google Drive OAuth, APK instalado e interface
 
 `version: 2.0.147+200161` é a versão canônica. Incremento sequencial sobre `2.0.146+200160`. Consulte `docs/RELEASE_2.0.147.md`.
