@@ -1,3 +1,9 @@
+## 2.0.144+200158 — 2026-11-09
+- Corrige os dois erros de acesso a valor anulável no `DriveSyncForegroundWatcher`, capturando `candidate?.project` em variável local e fazendo descarte do snapshot apenas quando não entrou na fila.
+- Remove `_ChangeNote` incompleto em Configurações, que produzia dois erros de argumentos obrigatórios `version` e `text`.
+- Atualiza o histórico das últimas três versões (2.0.144, 2.0.143 e 2.0.142), Novidades, documentação e metadados para Android `versionCode` 200158.
+- Correção fundamentada no `flutter analyze --no-pub --no-fatal-infos --no-fatal-warnings` do Android APK #133, que falhou na versão 2.0.143. Flutter SDK/Android build ainda precisam de validação na CI.
+
 ## 2.0.143+200157 — 2026-11-09
 - Inicia sincronização Drive → GitHub com OAuth Google Sign-In 7.2.0, pastas do Drive, vínculos por repo/branch e leitura somente de ZIP.
 - Baixa ZIP para cópia privada, valida SHA-256 e identidade, exige versão interna estritamente nova, metadados do GitHub e permissões conclusivas, sem remoções; qualquer ambiguidade vai ao fluxo manual.

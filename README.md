@@ -1,6 +1,6 @@
-# GitHub Manager 2.0.143
+# GitHub Manager 2.0.144
 
-**Versão:** `2.0.143+200157`. Integração inicial do Google Drive: autenticação, escolha de pastas, vínculo de repositório, download e verificação privada de ZIPs, proteção contra versões antigas e exclusões, controle de envio na fila e consulta automática em primeiro plano. Configuração OAuth obrigatória, veja `docs/GOOGLE_DRIVE_SYNC.md` e `docs/RELEASE_2.0.143.md`.
+**Versão:** `2.0.144+200158`. Corrige quatro erros de análise Flutter no workflow Android APK #133: acesso anulável na limpeza de prévias Google Drive e nota incompleta no histórico de Configurações. Mantém a integração Drive introduzida na 2.0.143, com as mesmas restrições de segurança. Veja `docs/RELEASE_2.0.144.md` e `docs/GOOGLE_DRIVE_SYNC.md`.
 
 
 **Versão:** `2.0.142+200156`. Corrige falso bloqueio de pacotes versionados no seletor ZIP e ajusta a suíte de testes mantendo cópia privada, SHA-256 e bloqueios de identidade. Veja `docs/RELEASE_2.0.142.md`.

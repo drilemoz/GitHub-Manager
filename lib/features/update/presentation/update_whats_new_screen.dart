@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class UpdateWhatsNewScreen extends StatelessWidget {
-  static const releaseNotesVersion = '2.0.143';
+  static const releaseNotesVersion = '2.0.144';
 
   const UpdateWhatsNewScreen({
     required this.versionLabel,
@@ -68,6 +68,12 @@ class UpdateWhatsNewScreen extends StatelessWidget {
                           ),
                     ),
                     const SizedBox(height: 24),
+                    const _UpdateItem(
+                      icon: Icons.build_circle_outlined,
+                      title: 'Corrigida a análise do código',
+                      description: 'Ajusta a limpeza de prévias da sincronização Google Drive e o histórico de Configurações para permitir o build Android.',
+                    ),
+                    const SizedBox(height: 12),
                     const _UpdateItem(
                       icon: Icons.shield_outlined,
                       title: 'Google Drive: conectar e vincular pastas',

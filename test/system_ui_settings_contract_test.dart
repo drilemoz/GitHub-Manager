@@ -53,5 +53,9 @@ void main() {
     expect(history, [
       for (var offset = 0; offset < 3; offset++) '$prefix${patch - offset}',
     ]);
+    // Uma nota vazia pode passar pela regex de versões e ainda quebrar o analyzer.
+    final changeNoteWidgets = RegExp(r'^\s+_ChangeNote\(', multiLine: true)
+        .allMatches(settings);
+    expect(changeNoteWidgets.length, 3);
   });
 }

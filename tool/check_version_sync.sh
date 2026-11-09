@@ -38,6 +38,13 @@ if [[ "$VERSION_NAME" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
     echo "Histórico de Configurações deve ter exatamente 3 versões; encontrou ${#history[@]}" >&2
     exit 1
   }
+  # Uma entrada sem versão passaria na verificação anterior e quebraria flutter analyze.
+  note_count="$(grep -Ec '^[[:space:]]+_ChangeNote\(' \
+    "$ROOT/lib/features/settings/presentation/settings_screen.dart")"
+  [[ "$note_count" -eq 3 ]] || {
+    echo "Histórico deve ter exatamente 3 widgets _ChangeNote; encontrou $note_count" >&2
+    exit 1
+  }
   for offset in 0 1 2; do
     expected="$major.$minor.$((patch - offset))"
     [[ "${history[$offset]}" == "$expected" ]] || {

@@ -1,3 +1,7 @@
+# 2.0.144 — Corrige erros da análise Flutter (workflow Android APK #133)
+
+`version: 2.0.144+200158` é a fonte canônica de versionName/versionCode. Incremento sequencial sobre 2.0.143+200157. Consulte `docs/RELEASE_2.0.144.md`.
+
 # 2.0.143 — Integração inicial Google Drive
 
 `version: 2.0.143+200157` é a fonte canônica de versionName/versionCode. Incremento sequencial sobre 2.0.142+200156. Consulte `docs/RELEASE_2.0.143.md`. Flutter SDK não presente no ambiente local, portanto o lockfile ainda precisa de resolução real no CI.

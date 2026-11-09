@@ -64,8 +64,11 @@ class _DriveSyncForegroundWatcherState extends ConsumerState<DriveSyncForeground
           await ref.read(localDatabaseProvider).putJson(
             'drive_sync.status.${link.key}', 'Verificação automática: $error');
         } finally {
-          if (!queued && candidate?.project != null) {
-            await LocalProjectService.discardPreviewPath(candidate.project.path);
+          // Guarde a referência local para promover a nulidade corretamente.
+          // A fila assume a posse do snapshot somente depois de ser criada.
+          final preview = candidate?.project;
+          if (!queued && preview != null) {
+            await LocalProjectService.discardPreviewPath(preview.path);
           }
         }
       }

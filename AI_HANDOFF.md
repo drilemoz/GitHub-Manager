@@ -1,3 +1,6 @@
+# GitHub Manager 2.0.144+200158 — correção do workflow Android APK #133 (2026-11-09)
+O `flutter analyze` da 2.0.143 retornou 4 erros: 2 acessos anuláveis em `drive_sync_foreground_watcher.dart` e 2 parâmetros obrigatórios ausentes em `_ChangeNote` de Configurações. Corrigido o descarte de prévia com variável local promovível, retirada a nota vazia e atualizado o histórico de versões, Novidades e metadados. A integração Drive e as regras fail-closed de envio permanecem inalteradas. Análise Flutter e build real ainda dependem da CI (Flutter SDK indisponível neste runtime).
+
 # GitHub Manager 2.0.143+200157 — integração Drive (2026-11-09)
 Implementação primeira etapa. Acrescentados google_sign_in, leitura Drive API v3, pastas por repositório/branch, verificação por SHA-256 e prévia, política de publicação conservadora e fila de uploads. Serviço DriveSyncForegroundWatcher consulta ao abrir/retomar o app ou durante uso, nunca via headless WorkManager. Ver docs/GOOGLE_DRIVE_SYNC.md. Sem Flutter local/CI verificada nesta entrega; `pubspec.lock` deve ser atualizado no Flutter 3.47.1 e restaurado `--enforce-lockfile` em seguida. Nenhum token de Google é salvo manualmente.
 
