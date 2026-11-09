@@ -5,6 +5,7 @@ enum ApkInstallationState {
   install,
   update,
   current,
+  versionMatches,
   newerInstalled,
   unknown,
   noApk,
@@ -37,6 +38,7 @@ class ApkInstallationAssessment {
     ApkInstallationState.install => 'Instalar',
     ApkInstallationState.update => 'Atualizar',
     ApkInstallationState.current => 'Atualizado',
+    ApkInstallationState.versionMatches => 'Versão semelhante',
     ApkInstallationState.newerInstalled => 'Mais recente no aparelho',
     ApkInstallationState.noApk => 'Sem APK',
     ApkInstallationState.unknown => 'Não foi possível verificar',
@@ -62,7 +64,13 @@ class ApkInstallationAssessment {
       return ApkInstallationAssessment(
         state: sourcesComplete ? ApkInstallationState.noApk : ApkInstallationState.unknown,
         packageName: packageName,
-        detail: sourcesComplete ? 'Nenhum APK publicado encontrado.' : 'Consulta incompleta às fontes do GitHub.',
+        installedVersion: installed?.status == InstalledAppQueryStatus.installed
+            ? installed?.versionName : null,
+        installedCode: installed?.status == InstalledAppQueryStatus.installed
+            ? installed?.versionCode : null,
+        detail: sourcesComplete ? 'Nenhum APK publicado encontrado. '
+            'A versão instalada, quando visível, ainda pode ser consultada.'
+            : 'Consulta incompleta às fontes do GitHub.',
       );
     }
     if (installed == null || installed.status == InstalledAppQueryStatus.unknown) {
@@ -138,7 +146,7 @@ class ApkInstallationAssessment {
     }
     if (comparison == ProjectVersionComparison.same) {
       return ApkInstallationAssessment(
-        state: ApkInstallationState.current,
+        state: codesAvailable ? ApkInstallationState.current : ApkInstallationState.versionMatches,
         packageName: base.packageName,
         installedVersion: base.installedVersion,
         installedCode: base.installedCode,
@@ -146,8 +154,9 @@ class ApkInstallationAssessment {
         availableCode: base.availableCode,
         verifiedCodes: codesAvailable,
         detail: codesAvailable
-            ? 'Versão e versionCode coincidem.'
-            : 'Versão visível coincide; versionCode do APK remoto não confirmado.',
+            ? 'Versão e versionCode coincidem entre o APK e o aparelho.'
+            : 'O nome da versão é igual, mas o versionCode do APK publicado '
+                'não foi confirmado. Não é possível garantir que está atualizado.', 
       );
     }
     return ApkInstallationAssessment(

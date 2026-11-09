@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:dio/dio.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:github_manager/features/drive_sync/domain/drive_sync_link.dart';
 import 'package:github_manager/features/projects/data/local_project_service.dart';
@@ -22,8 +23,21 @@ class GoogleDriveReadService {
   static const _scope = 'https://www.googleapis.com/auth/drive.readonly';
   static const _scopes = <String>[_scope];
   static const _webClientId = String.fromEnvironment('GOOGLE_WEB_CLIENT_ID');
+  static const _savedClientIdKey = 'google_drive_web_oauth_client_id';
+  static final _clientIdPattern = RegExp(
+    r'^[0-9]+-[a-zA-Z0-9_-]+\.apps\.googleusercontent\.com$',
+  );
+
+  /// OAuth client IDs are public identifiers, not Google access tokens.
+  /// The Web client is needed by google_sign_in_android without Firebase.
+  static bool isValidWebClientId(String value) =>
+      _clientIdPattern.hasMatch(value.trim());
+
 
   final Dio _dio;
+  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  bool _initialized = false;
+  String? _activeClientId;
   final GoogleSignIn _signIn = GoogleSignIn.instance;
   GoogleSignInAccount? _user;
   Future<void>? _initialization;
@@ -31,12 +45,49 @@ class GoogleDriveReadService {
 
   String? get email => _user?.email;
 
-  Future<void> initialize() => _initialization ??= _initialize();
+  Future<String?> configuredWebClientId() async {
+    final custom = (await _storage.read(key: _savedClientIdKey))?.trim();
+    if (custom != null && custom.isNotEmpty) return custom;
+    return _webClientId.trim().isEmpty ? null : _webClientId.trim();
+  }
+
+  bool get requiresRestart => _activeClientId != null && _changedClientId;
+  bool _changedClientId = false;
+
+  /// If OAuth is not configured, don't poison the cached GoogleSignIn singleton.
+  /// The user can configure a client ID in this screen before first login.
+  Future<void> saveWebClientId(String value) async {
+    final id = value.trim();
+    if (!isValidWebClientId(id)) {
+      throw const FormatException('Informe um ID OAuth do tipo Aplicativo da Web, '
+          'terminado em .apps.googleusercontent.com.');
+    }
+    await _storage.write(key: _savedClientIdKey, value: id);
+    if (_activeClientId != null) _changedClientId = id != _activeClientId;
+  }
+
+  Future<void> initialize() async {
+    if (_initialized) return;
+    final pending = _initialization;
+    if (pending != null) return pending;
+    final future = _initialize();
+    _initialization = future;
+    try {
+      await future;
+      _initialized = true;
+    } finally {
+      if (!_initialized) _initialization = null;
+    }
+  }
 
   Future<void> _initialize() async {
-    await _signIn.initialize(
-      serverClientId: _webClientId.isEmpty ? null : _webClientId,
-    );
+    final id = await configuredWebClientId();
+    if (id == null || !isValidWebClientId(id)) {
+      throw StateError('Google Drive não configurado: informe o ID OAuth Web '
+          'em Configurar conexão. Sem esse ID o Android não pode abrir o login Google.');
+    }
+    _activeClientId = id;
+    await _signIn.initialize(serverClientId: id);
     _subscription = _signIn.authenticationEvents.listen((event) {
       switch (event) {
         case GoogleSignInAuthenticationEventSignIn():
@@ -45,11 +96,21 @@ class GoogleDriveReadService {
           _user = null;
       }
     });
-    _user = await _signIn.attemptLightweightAuthentication();
+    try {
+      _user = await _signIn.attemptLightweightAuthentication();
+    } catch (_) {
+      // Login silencioso é opcional. O botão Conectar inicia autorização
+      // interativa e apresenta o erro real ao usuário se a conta não servir.
+      _user = null;
+    }
   }
 
   /// Must be invoked by a visible user gesture (OAuth consent).
   Future<String> connect() async {
+    if (requiresRestart) {
+      throw StateError('O ID OAuth foi alterado. Feche e abra o app para '
+          'reinicializar o login Google com o novo ID.');
+    }
     await initialize();
     if (_user == null) {
       _user = await _signIn.authenticate();

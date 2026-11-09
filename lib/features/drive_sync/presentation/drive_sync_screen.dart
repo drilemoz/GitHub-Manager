@@ -1,8 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:github_manager/core/providers/core_providers.dart';
+import 'package:github_manager/core/platform/platform_actions.dart';
 import 'package:github_manager/features/drive_sync/data/drive_sync_coordinator.dart';
 import 'package:github_manager/features/drive_sync/data/drive_sync_store.dart';
 import 'package:github_manager/features/drive_sync/data/google_drive_read_service.dart';
@@ -45,6 +47,9 @@ class _DriveSyncScreenState extends ConsumerState<DriveSyncScreen> {
   List<DriveSyncLink> _links = const [];
   List<GitHubRepository> _repositories = const [];
   String? _email;
+  String? _configuredId;
+  String? _signingSha1;
+  String? _androidPackage;
   String? _busyKey;
   String? _message;
   bool _loading = true;
@@ -62,13 +67,35 @@ class _DriveSyncScreenState extends ConsumerState<DriveSyncScreen> {
     });
     try {
       final drive = ref.read(googleDriveReadServiceProvider);
-      await drive.initialize();
+      final configuredId = await drive.configuredWebClientId();
+      String? loginError;
+      if (configuredId != null &&
+          GoogleDriveReadService.isValidWebClientId(configuredId)) {
+        try {
+          await drive.initialize();
+        } catch (error) {
+          loginError = _driveErrorMessage(error);
+        }
+      }
+      Map<String, String> certificate = const {};
+      try {
+        certificate = await PlatformActions.getOwnSigningCertificate();
+      } catch (_) {
+        // SHA-1 helps registration, but lack of native bridge must not block UI.
+      }
+      if (!mounted) return;
+      setState(() {
+        _email = drive.email;
+        _configuredId = configuredId;
+        _signingSha1 = certificate['sha1'];
+        _androidPackage = certificate['packageName'];
+        if (loginError != null) _message = loginError;
+      });
       final store = ref.read(driveSyncStoreProvider);
       final links = await store.read();
       final repositories = await ref.read(repositoryServiceProvider).listRepositories();
       if (!mounted) return;
       setState(() {
-        _email = drive.email;
         _links = links;
         _repositories = repositories.where((item) => !item.isArchived).toList();
       });
@@ -79,13 +106,111 @@ class _DriveSyncScreenState extends ConsumerState<DriveSyncScreen> {
     }
   }
 
+  String _driveErrorMessage(Object error) {
+    final raw = error.toString();
+    if (raw.contains('clientConfigurationError') ||
+        raw.contains('serverClientId must be provided')) {
+      return 'OAuth Google incompleto. Confira o Client ID Web, o pacote '
+          'Android, a SHA-1 do APK instalado e os usuários de teste no Google Cloud.';
+    }
+    if (raw.contains('canceled')) {
+      return 'Login cancelado ou rejeitado pelo Google. Confira também '
+          'a SHA-1 e a configuração OAuth do aplicativo Android.';
+    }
+    return raw.replaceFirst('Bad state: ', '');
+  }
+
+  Future<void> _configureOAuth() async {
+    final drive = ref.read(googleDriveReadServiceProvider);
+    final input = TextEditingController(text: _configuredId ?? '');
+    String? error;
+    try {
+      final save = await showDialog<String>(
+        context: context,
+        builder: (context) => StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            title: const Text('Configurar login Google'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Cole o Client ID OAuth do tipo Aplicativo da Web. '
+                      'Não use o ID do aplicativo Android nem uma API key.'),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: input,
+                    autocorrect: false,
+                    enableSuggestions: false,
+                    keyboardType: TextInputType.url,
+                    decoration: InputDecoration(
+                      labelText: 'Client ID Web',
+                      hintText: '123456-abc.apps.googleusercontent.com',
+                      border: const OutlineInputBorder(),
+                      errorText: error,
+                    ),
+                    onChanged: (_) {
+                      if (error != null) setDialogState(() => error = null);
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  const Text('No Google Cloud, crie também uma credencial '
+                      'Android para o pacote e a SHA-1 exibidos nesta tela. '
+                      'Ative a API Google Drive e adicione sua conta aos '
+                      'usuários de teste enquanto o OAuth estiver em testes.'),
+                  TextButton.icon(
+                    onPressed: () => PlatformActions.openUri(
+                      'https://console.cloud.google.com/apis/credentials'),
+                    icon: const Icon(Icons.open_in_new_rounded),
+                    label: const Text('Abrir credenciais Google Cloud'),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancelar')),
+              FilledButton(onPressed: () {
+                final value = input.text.trim();
+                if (!GoogleDriveReadService.isValidWebClientId(value)) {
+                  setDialogState(() => error = 'ID Web inválido. Confira o valor copiado.');
+                  return;
+                }
+                Navigator.pop(context, value);
+              }, child: const Text('Salvar')),
+            ],
+          ),
+        ),
+      );
+      if (save == null) return;
+      await drive.saveWebClientId(save);
+      if (!mounted) return;
+      setState(() {
+        _configuredId = save;
+        _message = drive.requiresRestart
+            ? 'ID Web salvo. Feche e abra o GitHub Manager para ativar a nova '
+                'configuração do login Google.'
+            : 'ID Web salvo. Toque em Conectar para autorizar sua conta.';
+      });
+    } catch (exception) {
+      if (mounted) setState(() => _message = _driveErrorMessage(exception));
+    } finally {
+      input.dispose();
+    }
+  }
+
   Future<void> _connect() async {
+    if (_configuredId == null ||
+        !GoogleDriveReadService.isValidWebClientId(_configuredId!)) {
+      await _configureOAuth();
+      return;
+    }
     setState(() { _busyKey = 'connect'; _message = null; });
     try {
       final email = await ref.read(googleDriveReadServiceProvider).connect();
       if (mounted) setState(() => _email = email);
     } catch (error) {
-      if (mounted) setState(() => _message = 'Conexão Google: $error');
+      if (mounted) setState(() => _message = 'Conexão Google: ${_driveErrorMessage(error)}');
     } finally {
       if (mounted) setState(() => _busyKey = null);
     }
@@ -222,64 +347,188 @@ class _DriveSyncScreenState extends ConsumerState<DriveSyncScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final ready = _configuredId != null &&
+        GoogleDriveReadService.isValidWebClientId(_configuredId!);
     return Scaffold(
-      appBar: AppBar(title: const Text('Sincronização Google Drive'), actions: [
-        IconButton(onPressed: _busyKey == null ? _load : null,
-          tooltip: 'Atualizar', icon: const Icon(Icons.refresh_rounded))]),
-      body: ListView(padding: const EdgeInsets.all(16), children: [
-        const Text('Primeira etapa: conecte o Google Drive e associe cada '
-            'pasta a um repositório. Os ZIPs são lidos, nunca alterados no Drive. '
-            'Os envios usam a fila e as verificações de segurança do GitHub Manager.'),
-        const SizedBox(height: 12),
-        Card(child: ListTile(
-          leading: const Icon(Icons.cloud_outlined),
-          title: Text(_email ?? 'Google Drive desconectado'),
-          subtitle: const Text('Acesso somente de leitura. OAuth Google exigido.'),
-          trailing: FilledButton.tonal(onPressed: _busyKey == null ? _connect : null,
-            child: Text(_email == null ? 'Conectar' : 'Autorizar')),
-        )),
-        if (_loading) const LinearProgressIndicator(),
-        if (_message != null) Padding(padding: const EdgeInsets.symmetric(vertical: 12),
-            child: SelectableText(_message!)),
+      appBar: AppBar(
+        title: const Text('Google Drive'),
+        actions: [
+          IconButton(onPressed: _busyKey == null ? _load : null,
+            tooltip: 'Atualizar conexão e vínculos',
+            icon: const Icon(Icons.refresh_rounded)),
+        ],
+      ),
+      body: ListView(padding: const EdgeInsets.fromLTRB(16, 12, 16, 30), children: [
+        Text('Sincronização de projetos',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w800)),
+        const SizedBox(height: 5),
+        Text('Conecte sua conta, vincule uma pasta do Drive ao repositório '
+            'e confira o ZIP antes da publicação.',
+          style: TextStyle(color: scheme.onSurfaceVariant)),
+        const SizedBox(height: 14),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: scheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: scheme.outlineVariant),
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Icon(_email == null ? Icons.cloud_off_outlined : Icons.cloud_done_outlined,
+                color: _email == null ? scheme.onSurfaceVariant : scheme.primary),
+              const SizedBox(width: 10),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(_email == null ? 'Drive desconectado' : 'Drive conectado',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800)),
+                  Text(_email ?? 'Permissão somente de leitura',
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: scheme.onSurfaceVariant)),
+                ])),
+            ]),
+            const SizedBox(height: 14),
+            Wrap(spacing: 8, runSpacing: 8, children: [
+              FilledButton.icon(
+                onPressed: _busyKey == null && ready &&
+                    !ref.read(googleDriveReadServiceProvider).requiresRestart
+                    ? _connect : null,
+                icon: const Icon(Icons.login_rounded),
+                label: Text(_email == null ? 'Conectar conta' : 'Reautorizar'),
+              ),
+              OutlinedButton.icon(
+                onPressed: _busyKey == null ? _configureOAuth : null,
+                icon: const Icon(Icons.settings_outlined),
+                label: const Text('Configurar OAuth'),
+              ),
+            ]),
+            if (!ready || ref.read(googleDriveReadServiceProvider).requiresRestart) ...[
+              const SizedBox(height: 10),
+              Text(!ready
+                  ? 'Configuração OAuth pendente. Informe o Client ID Web '
+                    'para habilitar o login no Android.'
+                  : 'O ID OAuth foi alterado. Feche e abra o app para ativar '
+                    'a nova configuração.',
+                style: TextStyle(color: scheme.error)),
+            ],
+          ]),
+        ),
         const SizedBox(height: 10),
-        FilledButton.icon(
-          onPressed: _busyKey == null && _repositories.isNotEmpty ? _addLink : null,
+        Card(
+          clipBehavior: Clip.antiAlias,
+          child: ExpansionTile(
+            initiallyExpanded: !ready,
+            leading: const Icon(Icons.verified_user_outlined),
+            title: const Text('Configuração e diagnóstico OAuth'),
+            subtitle: Text(ready ? 'Client ID Web informado' : 'Configure antes de conectar'),
+            childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+            children: [
+              Align(alignment: Alignment.centerLeft, child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Pacote Android', style: Theme.of(context).textTheme.labelMedium),
+                  SelectableText(_androidPackage ?? 'br.com.githubmanager.app'),
+                  const SizedBox(height: 9),
+                  Text('SHA-1 do certificado deste APK instalado',
+                    style: Theme.of(context).textTheme.labelMedium),
+                  Row(children: [
+                    Expanded(child: SelectableText(_signingSha1 ??
+                        'Não disponível neste aparelho')),
+                    if (_signingSha1 != null) IconButton(
+                      tooltip: 'Copiar SHA-1',
+                      onPressed: () => Clipboard.setData(ClipboardData(text: _signingSha1!)),
+                      icon: const Icon(Icons.copy_rounded)),
+                  ]),
+                  const SizedBox(height: 8),
+                  const Text('No Google Cloud, registre um OAuth Android com '
+                      'este pacote e esta SHA-1. Crie um OAuth do tipo Web '
+                      'no mesmo projeto e cole seu Client ID em Configurar OAuth. '
+                      'Ative Google Drive API e verifique a tela de consentimento.'),
+                  const SizedBox(height: 8),
+                  TextButton.icon(
+                    onPressed: () => PlatformActions.openUri(
+                      'https://console.cloud.google.com/apis/credentials'),
+                    icon: const Icon(Icons.open_in_new_rounded),
+                    label: const Text('Credenciais no Google Cloud')),
+                ],
+              )),
+            ],
+          ),
+        ),
+        if (_loading) const Padding(padding: EdgeInsets.only(top: 8),
+            child: LinearProgressIndicator()),
+        if (_message != null) Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: scheme.surfaceContainerHigh,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: SelectableText(_message!),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text('Pastas vinculadas',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w800)),
+        const SizedBox(height: 9),
+        FilledButton.tonalIcon(
+          onPressed: _busyKey == null && _email != null && _repositories.isNotEmpty
+              ? _addLink : null,
           icon: const Icon(Icons.create_new_folder_outlined),
           label: const Text('Vincular pasta a repositório')),
-        const SizedBox(height: 14),
+        if (_links.isEmpty) Padding(
+          padding: const EdgeInsets.symmetric(vertical: 18),
+          child: Text('Nenhuma pasta vinculada. Conecte o Drive e associe '
+              'uma pasta para começar.',
+            style: TextStyle(color: scheme.onSurfaceVariant)),
+        ),
         for (final link in _links)
           Card(child: Padding(padding: const EdgeInsets.all(12),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(link.repositoryFullName, style: Theme.of(context).textTheme.titleMedium),
+              Text(link.repositoryFullName,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700)),
               Text('Pasta: ${link.folderName}'),
               Text('Branch: ${link.branch}'),
               if (link.lastCompletedFileId != null)
                 const Text('Último ZIP registrado após publicação'),
               SwitchListTile.adaptive(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Enviar automaticamente ao verificar'),
-                subtitle: const Text('Somente versão nova, sem remoções e com validação conclusiva'),
+                title: const Text('Enviar ao verificar'),
+                subtitle: const Text('Somente versão nova, sem remoções'),
                 value: link.automatic,
                 onChanged: _busyKey != null ? null : (value) => _setAuto(link, value)),
               Wrap(spacing: 8, children: [
-                FilledButton.icon(onPressed: _busyKey == null ? () => _check(link) : null,
-                  icon: const Icon(Icons.sync_rounded), label: const Text('Verificar agora')),
-                TextButton.icon(onPressed: _busyKey == null ? () => _remove(link) : null,
-                  icon: const Icon(Icons.link_off_rounded), label: const Text('Desvincular')),
+                FilledButton.icon(
+                  onPressed: _busyKey == null ? () => _check(link) : null,
+                  icon: const Icon(Icons.sync_rounded),
+                  label: const Text('Verificar agora')),
+                TextButton.icon(
+                  onPressed: _busyKey == null ? () => _remove(link) : null,
+                  icon: const Icon(Icons.link_off_rounded),
+                  label: const Text('Desvincular')),
               ]),
             ]))),
-        const SizedBox(height: 12),
-        const Text('Segurança: versões antigas/iguais, identidade incerta, '
-            'permissões não confirmadas e exclusões no GitHub nunca são '
-            'publicadas por esta integração. Nesses casos, utilize o envio '
-            'manual com revisão. A execução em segundo plano ainda será '
-            'implementada em uma etapa posterior.'),
-        TextButton.icon(onPressed: () => context.push('/uploads'),
+        const SizedBox(height: 14),
+        Text('Proteção: versões iguais/antigas, identidade incerta, '
+            'exclusões e permissões inconclusivas não são publicadas por '
+            'esta integração. Use o envio manual nesses casos. '
+            'A verificação com o aplicativo fechado ainda não está disponível.',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: scheme.onSurfaceVariant)),
+        TextButton.icon(
+          onPressed: () => context.push('/uploads'),
           icon: const Icon(Icons.cloud_upload_outlined),
           label: const Text('Abrir Central de Envios')),
       ]),
     );
   }
+
 }
 
 class _DriveFolderSelection {

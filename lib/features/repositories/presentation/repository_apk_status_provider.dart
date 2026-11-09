@@ -62,7 +62,7 @@ final repositoryApkStatusProvider = FutureProvider.autoDispose
   );
   final id = info.applicationId?.trim();
   InstalledAndroidApp? installed;
-  if (id != null && id.isNotEmpty && !latest.isEmpty) {
+  if (id != null && id.isNotEmpty) {
     try {
       installed = await PlatformActions.getInstalledAppInfo(id)
           .timeout(const Duration(seconds: 5));

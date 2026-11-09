@@ -1,3 +1,7 @@
+# GitHub Manager 2.0.147+200161 — Google Drive OAuth, APK e UI (2026-11-09)
+
+A versão 2.0.147 deriva integralmente da 2.0.146. Corrige a falta de configuração OAuth em tempo de execução para Google Drive: Client ID Web validado e persistido, cadastro de credencial Android orientado pelo SHA-1 do APK instalado, e erro amigável. O app não gera IDs OAuth nem certificados. Redesenha a tela do projeto e do Drive e distingue versão igual sem versionCode remoto de APK efetivamente confirmado. Preserva upload manual/automático e as proteções. Testes Flutter, build Android e login em dispositivo não foram executados no ambiente local sem Flutter e credenciais OAuth.
+
 # GitHub Manager 2.0.146+200160 — corrige teste de política de upload (2026-11-09)
 
 Workflow Android APK #135: análise Flutter aprovada e 310 testes aprovados, mas `test/verified_upload_ui_contract_test.dart` falhou ao buscar expressão legada de bloqueio absoluto da versão 2.0.141. A 2.0.145 introduziu `UploadSafetySettings`, permitindo exceção manual de divergência mediante digitação. Atualizado teste para checar a política atual: prévia sempre obrigatória, identidade só pode ser autorizada quando preferência permite, digitação `owner/repo` para toda exceção e nenhuma transferência dessas preferências ao Drive automático. Sem mudanças na lógica de produção. Atualizados versionName/versionCode, changelog, VERSIONING, Novidades e notas de release. Build Flutter/Android ainda não executável no ambiente local. Rodar Actions para comprovar.

@@ -22,16 +22,28 @@ void main() {
     expect(result.availableVersion, '1.0.232');
   });
 
-  test('retorna atualizado com ressalva se versionCode remoto for desconhecido', () {
+  test('versão igual sem versionCode remoto não deve afirmar atualização', () {
     final result = ApkInstallationAssessment.evaluate(
       applicationId: 'br.exemplo.vigia',
       installed: _installed,
       availableVersion: '1.0.230',
       hasApk: true,
     );
-    expect(result.state, ApkInstallationState.current);
+    expect(result.state, ApkInstallationState.versionMatches);
     expect(result.verifiedCodes, isFalse);
     expect(result.detail, contains('versionCode'));
+  });
+
+  test('versões e códigos confirmados realmente mostram atualizado', () {
+    final result = ApkInstallationAssessment.evaluate(
+      applicationId: 'br.exemplo.vigia',
+      installed: _installed,
+      availableVersion: '1.0.230',
+      availableCode: 230,
+      hasApk: true,
+    );
+    expect(result.state, ApkInstallationState.current);
+    expect(result.verifiedCodes, isTrue);
   });
 
   test('não afirma atualização quando versão instalada é maior', () {

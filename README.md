@@ -1,4 +1,6 @@
-# GitHub Manager 2.0.146
+# GitHub Manager 2.0.147
+
+> Versão 2.0.147+200161: login Google Drive configurável no próprio app (ID Web e diagnóstico SHA-1); APK instalado verificado separadamente; versão remota igual sem versionCode é apenas correspondência provável; tela do repositório reorganizada. OAuth Google Cloud ainda exige cadastro de pacote e certificado, consentimento e Drive API ativada.
 
 ## Correção do Android APK #135
 

@@ -244,6 +244,18 @@ abstract final class PlatformActions {
   static Future<void> clearOptionalNotifications() =>
       _channel.invokeMethod<void>('clearOptionalNotifications');
 
+  /// Returns the SHA-1 of the certificate actually signing THIS installed APK,
+  /// which can differ between test, official and Play Store builds.
+  static Future<Map<String, String>> getOwnSigningCertificate() async {
+    final raw = await _channel.invokeMapMethod<String, String>(
+      'getOwnSigningCertificate',
+    );
+    if (raw == null) {
+      throw PlatformException(code: 'SIGNING_CERT_UNAVAILABLE');
+    }
+    return raw;
+  }
+
   static Future<AndroidDeviceInfo> getAndroidDeviceInfo() async {
     final raw = await _channel.invokeMapMethod<String, Object?>('getDeviceInfo');
     if (raw == null) {

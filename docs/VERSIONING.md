@@ -1,3 +1,7 @@
+# 2.0.147 — Google Drive OAuth, APK instalado e interface
+
+`version: 2.0.147+200161` é a versão canônica. Incremento sequencial sobre `2.0.146+200160`. Consulte `docs/RELEASE_2.0.147.md`.
+
 # 2.0.146 — Correção de contrato de testes do Android APK #135
 
 `version: 2.0.146+200160` é a versão canônica. Incremento sequencial sobre `2.0.145+200159`. Consulte `docs/RELEASE_2.0.146.md`.

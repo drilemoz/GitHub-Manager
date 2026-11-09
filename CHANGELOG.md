@@ -1,3 +1,11 @@
+## 2.0.147+200161 — 2026-11-09
+
+- Google Drive: permite informar o ID de cliente OAuth Web na própria tela, com validação, persistência, inicialização tardia e orientação específica para o erro `serverClientId must be provided on Android`. Exibe o SHA-1 real do certificado que assinou o APK instalado para cadastro da credencial OAuth Android; oferece link oficial de configuração e aviso de reinício quando o ID muda.
+- APKs: consulta a instalação local mesmo sem uma publicação remota; diferencia `versionName` igual de APK efetivamente atualizado quando falta o `versionCode` remoto. Exibe o código local, mantém incerteza sobre visibilidade Android e adiciona botão de reverificação.
+- Interface: separa cabeçalho e atalhos do projeto, redesenha comparador de versões e reorganiza a página do Drive com cartão de conexão, diagnóstico expansível e ações mais legíveis.
+- Segurança: conserva Google Drive em modo somente leitura, comparação conservadora, verificação de ZIP, fila de upload e proibições de publicação incerta. Nenhum OAuth client ID foi inventado ou incorporado.
+- Testes: amplia cobertura de identificação de cliente Web, contrato da UI OAuth, reconsulta local e versão igual não confirmada. Build Flutter/Android e teste de login em aparelho ainda pendentes.
+
 ## 2.0.146+200160 — 2026-11-09
 
 - Corrige o único teste reprovado no Android APK #135: `verified_upload_ui_contract_test.dart` ainda verificava o bloqueio absoluto `check.blocked || syncPreview == null`, removido legitimamente pela configuração de exceção manual da 2.0.145.

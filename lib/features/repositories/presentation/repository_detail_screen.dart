@@ -214,6 +214,7 @@ class _RepositoryDetailScreenState extends ConsumerState<RepositoryDetailScreen>
                                     ApkInstallationState.install => 'Instalar',
                                     ApkInstallationState.update => 'Atualizar',
                                     ApkInstallationState.current => 'Atualizado',
+                                    ApkInstallationState.versionMatches => 'Conferir',
                                     _ => 'APK',
                                   },
                             enabled: !_apkShortcutBusy,
@@ -248,7 +249,10 @@ class _RepositoryDetailScreenState extends ConsumerState<RepositoryDetailScreen>
                   SliverPadding(
                     padding: const EdgeInsets.fromLTRB(14, 7, 14, 0),
                     sliver: SliverToBoxAdapter(
-                      child: _RepositoryApkInstallationStatus(assessment: assessment),
+                      child: _RepositoryApkInstallationStatus(
+                        assessment: assessment,
+                        onRefresh: () => ref.invalidate(repositoryApkStatusProvider(repository)),
+                      ),
                     ),
                   ),
                 const SliverToBoxAdapter(child: SizedBox(height: 16)),

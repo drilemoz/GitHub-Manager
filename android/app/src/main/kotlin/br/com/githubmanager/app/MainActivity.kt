@@ -23,6 +23,7 @@ import io.flutter.plugin.common.MethodChannel
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.security.MessageDigest
 
 class MainActivity : FlutterActivity() {
     private var pendingStoragePermissionResult: MethodChannel.Result? = null
@@ -250,6 +251,13 @@ class MainActivity : FlutterActivity() {
                         result.error("NOTIFICATION_CLEANUP_FAILED", error.message, null)
                     }
                 }
+                "getOwnSigningCertificate" -> {
+                    try {
+                        result.success(ownSigningCertificate())
+                    } catch (error: Exception) {
+                        result.error("SIGNING_CERT_UNAVAILABLE", error.message, null)
+                    }
+                }
                 "getInstalledAppInfo" -> {
                     val packageName = call.argument<String>("packageName").orEmpty()
                     queryInstalledApp(packageName, result)
@@ -279,6 +287,33 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
+    }
+
+    private fun ownSigningCertificate(): Map<String, String> {
+        val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            PackageManager.GET_SIGNING_CERTIFICATES
+        } else {
+            @Suppress("DEPRECATION")
+            PackageManager.GET_SIGNATURES
+        }
+        val info = if (Build.VERSION.SDK_INT >= 33) {
+            packageManager.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(flags.toLong()))
+        } else {
+            @Suppress("DEPRECATION")
+            packageManager.getPackageInfo(packageName, flags)
+        }
+        val signatures = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            info.signingInfo?.apkContentsSigners
+        } else {
+            @Suppress("DEPRECATION")
+            info.signatures
+        }
+        val bytes = signatures?.firstOrNull()?.toByteArray()
+            ?: throw IllegalStateException("Certificado do APK instalado indisponível")
+        val fingerprint = MessageDigest.getInstance("SHA-1")
+            .digest(bytes)
+            .joinToString(":") { byte -> "%02X".format(byte.toInt() and 0xFF) }
+        return mapOf("packageName" to packageName, "sha1" to fingerprint)
     }
 
     private fun queryInstalledApp(packageName: String, result: MethodChannel.Result) {

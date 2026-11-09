@@ -435,16 +435,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                   children: const [
                     _ChangeNote(
+                      version: '2.0.147',
+                      text: 'Configuração OAuth do Drive no app, SHA-1 do APK, verificação honesta de versões e nova organização visual.',
+                    ),
+                    _ChangeNote(
                       version: '2.0.146',
-                      text: 'Corrige teste do workflow #135 para respeitar a segurança configurável no envio manual de ZIP.',
+                      text: 'Corrige contrato de testes do workflow #135 para permitir proteção configurável nos envios.',
                     ),
                     _ChangeNote(
                       version: '2.0.145',
-                      text: 'Adiciona segurança de envios configurável e confirmação digitada para alterações e remoções de arquivos.',
-                    ),
-                    _ChangeNote(
-                      version: '2.0.144',
-                      text: 'Corrige falhas de análise Flutter no monitor Drive e no histórico de Configurações.',
+                      text: 'Adiciona segurança de envios configurável e confirmação digitada para mudanças e remoções.',
                     ),
                   ],
                 ),

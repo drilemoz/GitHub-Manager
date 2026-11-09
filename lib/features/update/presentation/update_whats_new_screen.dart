@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class UpdateWhatsNewScreen extends StatelessWidget {
-  static const releaseNotesVersion = '2.0.146';
+  static const releaseNotesVersion = '2.0.147';
 
   const UpdateWhatsNewScreen({
     required this.versionLabel,
@@ -69,27 +69,27 @@ class UpdateWhatsNewScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 24),
                     const _UpdateItem(
-                      icon: Icons.build_circle_outlined,
-                      title: 'Correção do workflow Android APK #135',
-                      description: 'Atualiza o teste de prévia e identidade para a política de confirmação configurável, mantendo bloqueio sem prévia e exigência de digitar o repositório nas exceções.',
+                      icon: Icons.cloud_done_outlined,
+                      title: 'Google Drive: configuração OAuth no aplicativo',
+                      description: 'Insira o Client ID Web e copie a SHA-1 do APK instalado para registrar o login Android no Google Cloud.',
+                    ),
+                    const SizedBox(height: 12),
+                    const _UpdateItem(
+                      icon: Icons.phone_android_rounded,
+                      title: 'Verificação mais precisa de APKs instalados',
+                      description: 'Versão visível igual não é mais apresentada como atualização confirmada sem versionCode remoto; consulte novamente com um toque.',
+                    ),
+                    const SizedBox(height: 12),
+                    const _UpdateItem(
+                      icon: Icons.dashboard_customize_outlined,
+                      title: 'Tela do projeto reorganizada',
+                      description: 'Nome do projeto, ações rápidas e comparação de versões têm mais espaço e melhor leitura.',
                     ),
                     const SizedBox(height: 12),
                     const _UpdateItem(
                       icon: Icons.shield_outlined,
-                      title: 'Confirmação digitada por repositório',
-                      description: 'Quando exigida, a autorização mostra o destino, a identidade interna, a integridade do ZIP e as contagens; digite owner/repositório para continuar.'
-                    ),
-                    const SizedBox(height: 12),
-                    const _UpdateItem(
-                      icon: Icons.filter_list_rounded,
-                      title: 'Google Drive automático segue protegido',
-                      description: 'Novas opções não liberam envios automáticos incertos. A prévia, a validação do ZIP e as permissões continuam obrigatórias.'
-                    ),
-                    const SizedBox(height: 12),
-                    const _UpdateItem(
-                      icon: Icons.speed_outlined,
-                      title: 'Sincronização opcional em primeiro plano',
-                      description: 'Verifique ao tocar no botão ou habilite conferências ao abrir/retomar o aplicativo. Execução com o app fechado ainda não está disponível.'
+                      title: 'Segurança preservada',
+                      description: 'Google Drive permanece somente leitura; versões incertas, exclusões e permissões inconclusivas continuam protegidas.',
                     ),
                   ],
                 ),

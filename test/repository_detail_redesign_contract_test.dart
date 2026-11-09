@@ -10,7 +10,7 @@ void main() {
 
     expect(source, contains('_HeaderMetaChip'));
     expect(source, contains('SDK Android'));
-    expect(source, contains('APK não instalado'));
-    expect(source, contains("label: 'No aparelho'"));
+    expect(source, contains('Aplicativo não encontrado'));
+    expect(source, contains("label: 'Neste aparelho'"));
   });
 }
