@@ -1,3 +1,10 @@
+## 2.0.146+200160 — 2026-11-09
+
+- Corrige o único teste reprovado no Android APK #135: `verified_upload_ui_contract_test.dart` ainda verificava o bloqueio absoluto `check.blocked || syncPreview == null`, removido legitimamente pela configuração de exceção manual da 2.0.145.
+- Atualiza contrato de teste para garantir prévia obrigatória, bloqueio por padrão, autorização digitada de divergências por envio e ausência de influência dessas preferências no Drive automático; mantém verificações SHA-256/snapshot.
+- Preserva os 310 testes aprovados sem alterar a lógica de envio em produção. Versionamento sequencial 2.0.146+200160, Novidades, Configurações, notas de release e documentação sincronizados.
+- Pendente: execução `flutter test` e build Android no GitHub Actions; não comprovados localmente.
+
 ## 2.0.145+200159 — 2026-11-09
 
 - Corrige falso bloqueio de ZIP com um qualificador depois da versão (ex.: `AL-Sistemas-v2.0.7-VPS.zip` cujo nome interno é `AL Sistemas VPS`) sem liberar nomes realmente diferentes.

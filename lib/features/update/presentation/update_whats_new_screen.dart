@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class UpdateWhatsNewScreen extends StatelessWidget {
-  static const releaseNotesVersion = '2.0.145';
+  static const releaseNotesVersion = '2.0.146';
 
   const UpdateWhatsNewScreen({
     required this.versionLabel,
@@ -70,8 +70,8 @@ class UpdateWhatsNewScreen extends StatelessWidget {
                     const SizedBox(height: 24),
                     const _UpdateItem(
                       icon: Icons.build_circle_outlined,
-                      title: 'Segurança de envios configurável',
-                      description: 'Permite ajustar a proteção por divergência de projeto e os limites de confirmação para alterações e exclusões em ZIPs enviados manualmente.',
+                      title: 'Correção do workflow Android APK #135',
+                      description: 'Atualiza o teste de prévia e identidade para a política de confirmação configurável, mantendo bloqueio sem prévia e exigência de digitar o repositório nas exceções.',
                     ),
                     const SizedBox(height: 12),
                     const _UpdateItem(

@@ -435,16 +435,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                   children: const [
                     _ChangeNote(
+                      version: '2.0.146',
+                      text: 'Corrige teste do workflow #135 para respeitar a segurança configurável no envio manual de ZIP.',
+                    ),
+                    _ChangeNote(
                       version: '2.0.145',
                       text: 'Adiciona segurança de envios configurável e confirmação digitada para alterações e remoções de arquivos.',
                     ),
                     _ChangeNote(
                       version: '2.0.144',
                       text: 'Corrige falhas de análise Flutter no monitor Drive e no histórico de Configurações.',
-                    ),
-                    _ChangeNote(
-                      version: '2.0.143',
-                      text: 'Inicia integração Google Drive com autenticação, vínculos de pasta e sincronização segura de ZIPs.',
                     ),
                   ],
                 ),

@@ -1,3 +1,11 @@
+# GitHub Manager 2.0.146
+
+## Correção do Android APK #135
+
+O workflow anterior concluiu `flutter analyze`, mas parou em `flutter test` com **310 aprovados e 1 reprovado**. O contrato em `test/verified_upload_ui_contract_test.dart` ainda exigia o bloqueio absoluto da versão 2.0.141, incompatível com a opção de confirmação manual introduzida na 2.0.145. O teste foi ajustado para exigir prévia obrigatória, exceção apenas quando habilitada e autorização digitada por envio, além de manter as verificações de snapshot e SHA-256. Nenhum comportamento de upload em produção foi modificado.
+
+Validar com `flutter pub get`, `flutter analyze --no-fatal-warnings --no-fatal-infos`, `flutter test` e `flutter build apk` em CI. Não há SDK Flutter no ambiente de preparação.
+
 # GitHub Manager 2.0.145
 
 **Versão:** `2.0.145+200159`. Configurações → Envios agora permite escolher proteção da identidade do ZIP no envio manual e limiares de confirmação digitada para muitas alterações/exclusões. Corrige o falso conflito em nomes como `AL-Sistemas-v2.0.7-VPS.zip`. A prévia e a integridade permanecem obrigatórias; o Drive automático segue restritivo. Veja `docs/RELEASE_2.0.145.md`.

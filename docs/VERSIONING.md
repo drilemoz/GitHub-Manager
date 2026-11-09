@@ -1,3 +1,7 @@
+# 2.0.146 — Correção de contrato de testes do Android APK #135
+
+`version: 2.0.146+200160` é a versão canônica. Incremento sequencial sobre `2.0.145+200159`. Consulte `docs/RELEASE_2.0.146.md`.
+
 # 2.0.145 — Preferências de segurança para envio manual
 
 `version: 2.0.145+200159` é a versão canônica. Incremento sequencial sobre 2.0.144+200158. Ver `docs/RELEASE_2.0.145.md`.
