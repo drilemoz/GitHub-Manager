@@ -1,3 +1,7 @@
+# GitHub Manager 2.0.145+200159 — segurança ajustável de ZIP manual (2026-11-09)
+
+Corrigido o caso de qualificador após a versão de ZIP (`AL-Sistemas-v2.0.7-VPS.zip` → `AL Sistemas VPS`) para evitar falso bloqueio. No envio manual de ZIP, novas preferências locais permitem definir se a divergência de identidade pode ser autorizada com digitação de `owner/repo` e os limiares (incluindo desligar a digitação extra) para modificações e exclusões. Padrão: divergência bloqueada, 100 alterações (novos + modificados) ou 1 exclusão exigem digitação. Sempre mantém prévia de arquivos, SHA-256 verificado e permissões. A integração automática Google Drive não usa essas preferências e segue bloqueando incertezas. Testes de regras e regressão adicionados; `flutter analyze/test/build` completos ainda devem rodar no GitHub Actions.
+
 # GitHub Manager 2.0.144+200158 — correção do workflow Android APK #133 (2026-11-09)
 O `flutter analyze` da 2.0.143 retornou 4 erros: 2 acessos anuláveis em `drive_sync_foreground_watcher.dart` e 2 parâmetros obrigatórios ausentes em `_ChangeNote` de Configurações. Corrigido o descarte de prévia com variável local promovível, retirada a nota vazia e atualizado o histórico de versões, Novidades e metadados. A integração Drive e as regras fail-closed de envio permanecem inalteradas. Análise Flutter e build real ainda dependem da CI (Flutter SDK indisponível neste runtime).
 

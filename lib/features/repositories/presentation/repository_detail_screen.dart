@@ -23,6 +23,7 @@ import 'package:github_manager/features/permissions/domain/repository_permission
 import 'package:github_manager/features/permissions/presentation/permission_preflight_guard.dart';
 import 'package:github_manager/features/permissions/presentation/token_permission_providers.dart';
 import 'package:github_manager/features/projects/domain/project_safety_check.dart';
+import 'package:github_manager/features/projects/data/upload_safety_settings.dart';
 import 'package:github_manager/features/projects/domain/upload_identification_diagnosis.dart';
 import 'package:github_manager/features/projects/domain/zip_project.dart';
 import 'package:github_manager/features/projects/presentation/project_providers.dart';

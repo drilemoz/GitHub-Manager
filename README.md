@@ -1,4 +1,6 @@
-# GitHub Manager 2.0.144
+# GitHub Manager 2.0.145
+
+**Versão:** `2.0.145+200159`. Configurações → Envios agora permite escolher proteção da identidade do ZIP no envio manual e limiares de confirmação digitada para muitas alterações/exclusões. Corrige o falso conflito em nomes como `AL-Sistemas-v2.0.7-VPS.zip`. A prévia e a integridade permanecem obrigatórias; o Drive automático segue restritivo. Veja `docs/RELEASE_2.0.145.md`.
 
 **Versão:** `2.0.144+200158`. Corrige quatro erros de análise Flutter no workflow Android APK #133: acesso anulável na limpeza de prévias Google Drive e nota incompleta no histórico de Configurações. Mantém a integração Drive introduzida na 2.0.143, com as mesmas restrições de segurança. Veja `docs/RELEASE_2.0.144.md` e `docs/GOOGLE_DRIVE_SYNC.md`.
 

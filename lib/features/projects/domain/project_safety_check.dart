@@ -71,10 +71,12 @@ class ProjectSafetyCheck {
 
     // A versioned selected ZIP has a strong filename hint. If its actual
     // internal identity differs, the selector may have supplied cached bytes
-    // from another project. Do not permit a manual "force" bypass.
+    // from another project. A checagem retorna o conflito; somente o fluxo
+    // manual configurado pode solicitar exceção mediante digitação do destino.
     final filenameHint = _versionedFilenameProjectHint(project.name);
     final rootHint = _versionedFilenameProjectHint('${project.commonRoot ?? ''}.zip');
-    if (filenameHint.isNotEmpty && rootHint.isNotEmpty && rootHint != filenameHint) {
+    if (filenameHint.isNotEmpty && rootHint.isNotEmpty &&
+        !_filenameHintMatchesProject(project.name, rootHint)) {
       return ProjectSafetyCheck(
         blocked: true,
         warning: true,
@@ -95,7 +97,7 @@ class ProjectSafetyCheck {
     if (filenameHint.isNotEmpty &&
         explicitZipName.isEmpty &&
         fallbackPackageHint.isNotEmpty &&
-        filenameHint != fallbackPackageHint) {
+        !_filenameHintMatchesProject(project.name, fallbackPackageHint)) {
       return ProjectSafetyCheck(
         blocked: true,
         warning: true,
@@ -109,7 +111,7 @@ class ProjectSafetyCheck {
     }
     if (filenameHint.isNotEmpty &&
         explicitZipName.isNotEmpty &&
-        filenameHint != explicitZipName) {
+        !_filenameHintMatchesProject(project.name, explicitZipName)) {
       return ProjectSafetyCheck(
         blocked: true,
         warning: true,
@@ -307,6 +309,26 @@ class ProjectSafetyCheck {
     );
     // e.g. @vendor/social-lite, com.example.social_lite or social-lite.
     return _canonicalProjectName(value.split(RegExp(r'[/.]')).last);
+  }
+
+  /// Um único qualificador depois da versão pode fazer parte do nome real.
+  /// Ex.: AL-Sistemas-v2.0.7-VPS.zip tem nome interno 'AL Sistemas VPS'.
+  /// Conserva a checagem estrita para outros nomes e para sufixos compostos
+  /// de distribuição (ex.: -fonte-completo, -20260826-212533-main).
+  static bool _filenameHintMatchesProject(
+      String filename, String internalName) {
+    final prefix = _versionedFilenameProjectHint(filename);
+    if (prefix == internalName) return true;
+    final basename = filename.replaceFirst(
+      RegExp(r'\.zip$', caseSensitive: false),
+      '',
+    );
+    final match = RegExp(
+      r'^(.+?)[-_. ]+v?\d+\.\d+(?:\.\d+)?[-+._ ]+([a-z][a-z0-9]{1,20})$',
+      caseSensitive: false,
+    ).firstMatch(basename);
+    if (match == null) return false;
+    return _normalize('${match.group(1)}${match.group(2)}') == internalName;
   }
 
   static String _versionedFilenameProjectHint(String filename) {

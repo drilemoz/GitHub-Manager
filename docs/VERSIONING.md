@@ -1,3 +1,7 @@
+# 2.0.145 — Preferências de segurança para envio manual
+
+`version: 2.0.145+200159` é a versão canônica. Incremento sequencial sobre 2.0.144+200158. Ver `docs/RELEASE_2.0.145.md`.
+
 # 2.0.144 — Corrige erros da análise Flutter (workflow Android APK #133)
 
 `version: 2.0.144+200158` é a fonte canônica de versionName/versionCode. Incremento sequencial sobre 2.0.143+200157. Consulte `docs/RELEASE_2.0.144.md`.

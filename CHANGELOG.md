@@ -1,3 +1,12 @@
+## 2.0.145+200159 — 2026-11-09
+
+- Corrige falso bloqueio de ZIP com um qualificador depois da versão (ex.: `AL-Sistemas-v2.0.7-VPS.zip` cujo nome interno é `AL Sistemas VPS`) sem liberar nomes realmente diferentes.
+- Configurações → Envios: opção desativada por padrão para permitir exceção manual a conflitos de identidade entre nome/ZIP/metadados e repositório, somente após confirmação digitada do destino completo.
+- Limiares configuráveis para solicitar digitação do repositório ao modificar muitos arquivos existentes (0, 25, 100 ou 250) e ao excluir arquivos (0, 1, 5 ou 20); padrões: 100 novos/modificados ou 1 removido.
+- Confirmação de alto risco inclui repositório, nome do ZIP, identidade interna, SHA-256, contagens de novos/modificados/removidos e motivos. A exceção é por envio, nunca automática.
+- Preservadas prévia obrigatória de diferenças, verificação de integridade e permissões GitHub, proteção de workflows e política rígida da sincronização automática Google Drive.
+- Novos testes de regras, persistência e integração; versão/código/metadados e histórico de Novidades sincronizados. Build completo Flutter/Android ainda requer CI.
+
 ## 2.0.144+200158 — 2026-11-09
 - Corrige os dois erros de acesso a valor anulável no `DriveSyncForegroundWatcher`, capturando `candidate?.project` em variável local e fazendo descarte do snapshot apenas quando não entrou na fila.
 - Remove `_ChangeNote` incompleto em Configurações, que produzia dois erros de argumentos obrigatórios `version` e `text`.

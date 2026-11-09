@@ -574,13 +574,41 @@ mixin _RepositoryDetailScreenActions on ConsumerState<RepositoryDetailScreen> {
     bool? branchHasApkWorkflow,
     ProjectSyncPreview? syncPreview,
     GitHubRateLimitSnapshot? rateLimit,
-  ) {
+  ) async {
     final check = ProjectSafetyCheck.compare(
       project: project,
       repository: repository,
       repositoryInfo: repositoryInfo,
     );
-    final mustBlock = check.blocked || syncPreview == null;
+    // Falha de leitura não cria bypass: os padrões continuam restritivos.
+    var safetySettings = const UploadSafetySettings();
+    try {
+      safetySettings = await UploadSafetySettings.read(
+        database: ref.read(localDatabaseProvider),
+      );
+    } catch (_) {
+      // Sem preferências verificáveis, mantém a política mais conservadora.
+    }
+    if (!mounted) return null;
+    final identityOverride =
+        check.blocked && safetySettings.allowIdentityMismatchWithConfirmation;
+    final mustBlock = syncPreview == null ||
+        (check.blocked && !identityOverride);
+    final confirmationReasons = syncPreview == null
+        ? const <String>[]
+        : safetySettings.confirmationReasons(
+            modifiedCount: syncPreview.modifiedCount,
+            deletedCount: syncPreview.deletedCount,
+            createdCount: syncPreview.createdCount,
+            identityMismatch: identityOverride,
+          );
+    final requiresTypedConfirmation = syncPreview != null &&
+        safetySettings.requiresTypedConfirmation(
+          modifiedCount: syncPreview.modifiedCount,
+          deletedCount: syncPreview.deletedCount,
+          createdCount: syncPreview.createdCount,
+          identityMismatch: identityOverride,
+        );
     var buildPolicy = branchHasApkWorkflow == false
         ? ManagedUploadBuildPolicy.skipNoWorkflow
         : ManagedUploadBuildPolicy.automatic;
@@ -657,6 +685,8 @@ mixin _RepositoryDetailScreenActions on ConsumerState<RepositoryDetailScreen> {
                   decoration: BoxDecoration(
                     color: mustBlock
                         ? Theme.of(dialogContext).colorScheme.errorContainer
+                        : identityOverride
+                            ? Theme.of(dialogContext).colorScheme.tertiaryContainer
                         : check.warning
                             ? Theme.of(dialogContext).colorScheme.tertiaryContainer
                             : Theme.of(dialogContext).colorScheme.primaryContainer,
@@ -667,6 +697,8 @@ mixin _RepositoryDetailScreenActions on ConsumerState<RepositoryDetailScreen> {
                     children: [
                       Icon(mustBlock
                           ? Icons.block_rounded
+                          : identityOverride
+                              ? Icons.warning_amber_rounded
                           : check.warning
                               ? Icons.warning_amber_rounded
                               : Icons.verified_rounded),
@@ -675,7 +707,10 @@ mixin _RepositoryDetailScreenActions on ConsumerState<RepositoryDetailScreen> {
                           syncPreview == null
                               ? 'BLOQUEADO: não foi possível calcular as alterações. '
                                   'Nenhum envio é permitido sem conferir a prévia dos arquivos.'
-                              : check.message,
+                              : identityOverride
+                                  ? 'ALERTA: ${check.message.replaceFirst(RegExp(r'^BLOQUEADO:\s*'), '')}\n\nExceção manual habilitada nas Configurações. '
+                                      'Confira os arquivos e digite o repositório para autorizar este envio específico.'
+                                  : check.message,
                           style: const TextStyle(fontWeight: FontWeight.w700))),
                     ],
                   ),
@@ -693,6 +728,18 @@ mixin _RepositoryDetailScreenActions on ConsumerState<RepositoryDetailScreen> {
                       ),
                       icon: const Icon(Icons.build_outlined),
                       label: const Text('Diagnosticar / Como corrigir'),
+                    ),
+                  ),
+                if (mustBlock && check.blocked && syncPreview != null)
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      onPressed: () {
+                        Navigator.pop(dialogContext);
+                        if (mounted) context.push('/settings');
+                      },
+                      icon: const Icon(Icons.settings_outlined),
+                      label: const Text('Ajustar proteção em Configurações'),
                     ),
                   ),
                 if (syncPreview != null && syncPreview.deletedCount > 0)
@@ -812,11 +859,14 @@ mixin _RepositoryDetailScreenActions on ConsumerState<RepositoryDetailScreen> {
             onPressed: mustBlock
                 ? null
                 : () async {
-                    if (syncPreview!.deletedCount > 0) {
+                    if (requiresTypedConfirmation) {
                       final accepted = await _confirmRemovalWithRepositoryName(
                         dialogContext,
                         repository.fullName,
-                        syncPreview!.deletedCount,
+                        syncPreview!,
+                        project: project,
+                        reasons: confirmationReasons,
+                        identityOverride: identityOverride,
                       );
                       if (accepted != true || !dialogContext.mounted) return;
                     }
@@ -825,12 +875,12 @@ mixin _RepositoryDetailScreenActions on ConsumerState<RepositoryDetailScreen> {
                           _ConfirmZipResult.submit(buildPolicy));
                     }
                   },
-            icon: Icon(mustBlock || check.warning
+            icon: Icon(mustBlock || check.warning || identityOverride
                 ? Icons.warning_amber_rounded : Icons.cloud_upload_outlined),
             label: Text(mustBlock
                 ? 'Envio bloqueado'
-                : (syncPreview?.deletedCount ?? 0) > 0
-                    ? 'Conferir remoções'
+                : requiresTypedConfirmation
+                    ? 'Confirmar envio'
                     : check.warning ? 'Enviar mesmo assim' : 'Enviar versão'),
           ),
         ],
@@ -841,32 +891,67 @@ mixin _RepositoryDetailScreenActions on ConsumerState<RepositoryDetailScreen> {
   Future<bool?> _confirmRemovalWithRepositoryName(
     BuildContext parent,
     String fullName,
-    int deletedCount,
-  ) async {
+    ProjectSyncPreview preview, {
+    required ZipProjectPreview project,
+    required List<String> reasons,
+    required bool identityOverride,
+  }) async {
     final typed = TextEditingController();
     try {
       return await showDialog<bool>(
         context: parent,
+        barrierDismissible: false,
         builder: (dialog) => StatefulBuilder(
           builder: (context, refresh) => AlertDialog(
-            title: const Text('Confirmar remoção de arquivos'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('O envio removerá $deletedCount arquivo(s) de $fullName. '
-                    'Digite o nome completo do repositório para autorizar.'),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: typed,
-                  onChanged: (_) => refresh(() {}),
-                  decoration: InputDecoration(
-                    border: const OutlineInputBorder(),
-                    labelText: 'Repositório (owner/nome)',
-                    hintText: fullName,
+            title: Text(identityOverride
+                ? 'Autorizar projeto divergente'
+                : 'Confirmar alterações no repositório'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Esta alteração pode substituir arquivos do GitHub. '
+                      'A autorização vale somente para este envio.'),
+                  const SizedBox(height: 8),
+                  Text('Destino: $fullName',
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                  Text('ZIP: ${project.name}'),
+                  Text('Identidade interna: ${project.identityLabel}'),
+                  Text('SHA-256: ${project.sha256 ?? 'não disponível'}'),
+                  Text('${preview.modifiedCount} modificados • '
+                      '${preview.deletedCount} removidos • '
+                      '${preview.createdCount} novos'),
+                  const SizedBox(height: 12),
+                  for (final reason in reasons)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 5),
+                      child: Text('• $reason'),
+                    ),
+                  if (identityOverride)
+                    const Text(
+                      'ATENÇÃO: nomes ou identificadores diferentes podem '
+                      'indicar um ZIP incorreto ou cache do seletor Android. '
+                      'O envio pode substituir o projeto errado.',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  const SizedBox(height: 14),
+                  Text('Digite exatamente $fullName para autorizar.'),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: typed,
+                    autofocus: true,
+                    onChanged: (_) => refresh(() {}),
+                    autocorrect: false,
+                    textCapitalization: TextCapitalization.none,
+                    decoration: InputDecoration(
+                      border: const OutlineInputBorder(),
+                      labelText: 'Repositório (owner/nome)',
+                      hintText: fullName,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
             actions: [
               TextButton(
@@ -876,7 +961,7 @@ mixin _RepositoryDetailScreenActions on ConsumerState<RepositoryDetailScreen> {
               FilledButton(
                 onPressed: typed.text.trim() == fullName
                     ? () => Navigator.pop(dialog, true) : null,
-                child: const Text('Autorizar remoções'),
+                child: const Text('Autorizar este envio'),
               ),
             ],
           ),

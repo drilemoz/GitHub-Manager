@@ -9,6 +9,8 @@ mixin _SettingsScreenActions on ConsumerState<SettingsScreen> {
       _notificationPreferences?.enabled == true && !_savingNotifications;
   bool? _automaticUploadRecoveryEnabled;
   DownloadCleanupMode? _downloadCleanupMode;
+  UploadSafetySettings? _uploadSafetySettings;
+  bool _savingUploadSafety = false;
   bool _updatingFullScreen = false;
 
   void initializeSettingsState() {
@@ -16,7 +18,98 @@ mixin _SettingsScreenActions on ConsumerState<SettingsScreen> {
     _loadApiSettings();
     _loadNotificationSettings();
     _loadUploadRecoverySettings();
+    _loadUploadSafetySettings();
     _loadDownloadCleanupSettings();
+  }
+
+  Future<void> _loadUploadSafetySettings() async {
+    var settings = const UploadSafetySettings();
+    try {
+      settings = await UploadSafetySettings.read(
+        database: ref.read(localDatabaseProvider),
+      );
+    } catch (_) {
+      // Falha de leitura => valores restritivos por padrão.
+    }
+    if (mounted) setState(() => _uploadSafetySettings = settings);
+  }
+
+  Future<void> _setUploadSafetySettings(UploadSafetySettings settings) async {
+    if (_savingUploadSafety) return;
+    setState(() => _savingUploadSafety = true);
+    try {
+      await UploadSafetySettings.write(
+        settings,
+        database: ref.read(localDatabaseProvider),
+      );
+      if (!mounted) return;
+      setState(() => _uploadSafetySettings = settings);
+      showCenteredNotice(
+        context,
+        'Preferências de segurança de envios atualizadas.',
+        kind: CenteredNoticeKind.success,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      showCenteredNotice(
+        context,
+        'Não foi possível salvar a preferência de segurança.',
+        kind: CenteredNoticeKind.error,
+      );
+    } finally {
+      if (mounted) setState(() => _savingUploadSafety = false);
+    }
+  }
+
+  Future<void> _chooseUploadConfirmationThreshold({
+    required bool forDeletions,
+  }) async {
+    final settings = _uploadSafetySettings;
+    if (settings == null || _savingUploadSafety) return;
+    final options = forDeletions
+        ? UploadSafetySettings.deletionOptions
+        : UploadSafetySettings.modifiedOptions;
+    final selected = await showDialog<int>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(forDeletions
+            ? 'Confirmação de exclusões'
+            : 'Confirmação de muitas alterações'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final count in options)
+                RadioListTile<int>(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(forDeletions
+                      ? UploadSafetySettings.deletionLabel(count)
+                      : UploadSafetySettings.modifiedLabel(count)),
+                  value: count,
+                  groupValue: forDeletions
+                      ? settings.deletionConfirmationThreshold
+                      : settings.modifiedConfirmationThreshold,
+                  onChanged: (value) => Navigator.pop(dialogContext, value),
+                ),
+              const Text(
+                'A opção altera somente a digitação extra. A prévia de '
+                'mudanças e remoções continua disponível e obrigatória.',
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancelar'),
+          ),
+        ],
+      ),
+    );
+    if (selected == null || !mounted) return;
+    await _setUploadSafetySettings(forDeletions
+        ? settings.copyWith(deletionConfirmationThreshold: selected)
+        : settings.copyWith(modifiedConfirmationThreshold: selected));
   }
 
   Future<void> _loadDownloadCleanupSettings() async {

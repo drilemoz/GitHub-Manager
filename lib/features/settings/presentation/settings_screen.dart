@@ -20,6 +20,7 @@ import 'package:github_manager/features/home/presentation/home_providers.dart';
 import 'package:github_manager/features/repositories/presentation/repository_providers.dart';
 import 'package:github_manager/features/repositories/data/repository_description_settings.dart';
 import 'package:github_manager/features/uploads/data/upload_recovery_settings.dart';
+import 'package:github_manager/features/projects/data/upload_safety_settings.dart';
 import 'package:github_manager/features/downloads/data/download_cleanup_settings.dart';
 import 'package:github_manager/features/update/presentation/update_whats_new_screen.dart';
 import 'package:go_router/go_router.dart';
@@ -215,6 +216,59 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   : _setUploadAutomaticRecovery,
             ),
           ),
+          const SizedBox(height: 10),
+          Card(
+            child: Column(
+              children: [
+                SwitchListTile(
+                  secondary: const Icon(Icons.shield_outlined),
+                  title: const Text('Permitir ZIP com identidade divergente'),
+                  subtitle: const Text(
+                    'Apenas no envio manual: permite continuar após conferir a prévia e digitar o nome completo do repositório. '
+                    'Desativado por padrão. O Google Drive automático continua bloqueando casos incertos.',
+                  ),
+                  value: _uploadSafetySettings?.allowIdentityMismatchWithConfirmation ?? false,
+                  onChanged: _uploadSafetySettings == null || _savingUploadSafety
+                      ? null
+                      : (enabled) => _setUploadSafetySettings(
+                            _uploadSafetySettings!.copyWith(
+                              allowIdentityMismatchWithConfirmation: enabled,
+                            ),
+                          ),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.edit_note_rounded),
+                  title: const Text('Confirmar muitas alterações'),
+                  subtitle: Text(_uploadSafetySettings == null
+                      ? 'Carregando preferência…'
+                      : 'Digitar nome do repositório: ${UploadSafetySettings.modifiedLabel(_uploadSafetySettings!.modifiedConfirmationThreshold)} novos ou modificados.'),
+                  trailing: const Icon(Icons.tune_rounded),
+                  onTap: _uploadSafetySettings == null || _savingUploadSafety
+                      ? null : () => _chooseUploadConfirmationThreshold(forDeletions: false),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.delete_outline_rounded),
+                  title: const Text('Confirmar exclusões de arquivos'),
+                  subtitle: Text(_uploadSafetySettings == null
+                      ? 'Carregando preferência…'
+                      : 'Digitar nome do repositório: ${UploadSafetySettings.deletionLabel(_uploadSafetySettings!.deletionConfirmationThreshold)} removidos.'),
+                  trailing: const Icon(Icons.tune_rounded),
+                  onTap: _uploadSafetySettings == null || _savingUploadSafety
+                      ? null : () => _chooseUploadConfirmationThreshold(forDeletions: true),
+                ),
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(16, 4, 16, 14),
+                  child: Text(
+                    'Essas opções afetam somente a confirmação do envio manual. '
+                    'A comparação de arquivos, a verificação de integridade do ZIP, '
+                    'as permissões do GitHub e a proteção dos workflows continuam obrigatórias.',
+                  ),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 18),
           const _SectionTitle('Integrações'),
           profile.when(
@@ -381,16 +435,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                   children: const [
                     _ChangeNote(
+                      version: '2.0.145',
+                      text: 'Adiciona segurança de envios configurável e confirmação digitada para alterações e remoções de arquivos.',
+                    ),
+                    _ChangeNote(
                       version: '2.0.144',
                       text: 'Corrige falhas de análise Flutter no monitor Drive e no histórico de Configurações.',
                     ),
                     _ChangeNote(
                       version: '2.0.143',
                       text: 'Inicia integração Google Drive com autenticação, vínculos de pasta e sincronização segura de ZIPs.',
-                    ),
-                    _ChangeNote(
-                      version: '2.0.142',
-                      text: 'Corrige falso bloqueio para pacotes versionados e atualiza testes de segurança.',
                     ),
                   ],
                 ),

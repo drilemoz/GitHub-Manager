@@ -60,7 +60,9 @@ void main() {
     expect(source, contains('_UploadSyncSummary('));
     expect(source, contains('syncPreview.deletedCount > 0'));
     expect(source, contains('Copiar diagnóstico'));
-    expect(source, contains('final mustBlock = check.blocked || syncPreview == null'));
+    expect(source, contains('final mustBlock = syncPreview == null ||'));
+    expect(source, contains('check.blocked && !identityOverride'));
+    expect(source, contains('requiresTypedConfirmation')); 
     expect(source, contains('Envio bloqueado'));
     expect(source, contains('_confirmRemovalWithRepositoryName('));
     expect(source, isNot(contains('Forçar envio para este repositório?')));

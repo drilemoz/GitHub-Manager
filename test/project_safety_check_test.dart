@@ -251,6 +251,40 @@ void main() {
     expect(result.identitySource, contains('arquivo escolhido'));
   });
 
+  test('qualificador VPS após versão é parte legítima do nome do projeto', () {
+    const serverRepository = GitHubRepository(
+      id: 51, name: 'alsistemas', fullName: 'drilemoz/alsistemas',
+      isPrivate: false, isArchived: false, defaultBranch: 'main',
+      updatedAt: null, htmlUrl: 'https://github.com/drilemoz/alsistemas',
+    );
+    final result = ProjectSafetyCheck.compare(
+      project: preview(
+        name: 'AL-Sistemas-v2.0.7-VPS.zip',
+        projectName: 'AL Sistemas VPS',
+        version: '2.0.7',
+      ),
+      repository: serverRepository,
+      repositoryInfo: info(
+        projectName: 'AL Sistemas VPS',
+        version: '2.0.6',
+      ),
+    );
+    expect(result.blocked, isFalse);
+  });
+
+  test('qualificador de ZIP não libera projeto genuinamente diferente', () {
+    final result = ProjectSafetyCheck.compare(
+      project: preview(
+        name: 'AL-Sistemas-v2.0.7-VPS.zip',
+        projectName: 'Projeto Desconhecido',
+        version: '2.0.7',
+      ),
+      repository: repository,
+      repositoryInfo: info(),
+    );
+    expect(result.blocked, isTrue);
+  });
+
   test('matching filename and internal identity continue normally', () {
     final result = ProjectSafetyCheck.compare(
       project: preview(
