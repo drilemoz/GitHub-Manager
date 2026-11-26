@@ -323,15 +323,17 @@ class MainActivity : FlutterActivity() {
             result.success(mapOf("status" to "unknown", "reason" to "invalid_package_id"))
             return
         }
+        val appContext = applicationContext
+        val manager = appContext.packageManager
         try {
             val info = if (Build.VERSION.SDK_INT >= 33) {
-                packageManager.getPackageInfo(
+                manager.getPackageInfo(
                     packageName,
                     PackageManager.PackageInfoFlags.of(0),
                 )
             } else {
                 @Suppress("DEPRECATION")
-                packageManager.getPackageInfo(packageName, 0)
+                manager.getPackageInfo(packageName, 0)
             }
             val code = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 info.longVersionCode
@@ -359,8 +361,9 @@ class MainActivity : FlutterActivity() {
             )
         } catch (_: SecurityException) {
             result.success(mapOf("status" to "unknown", "reason" to "security"))
-        } catch (_: Exception) {
-            result.success(mapOf("status" to "unknown", "reason" to "query_failed"))
+        } catch (error: Exception) {
+            android.util.Log.w("GitHubManager", "Installed package query failed", error)
+            result.success(mapOf("status" to "unknown", "reason" to "query_failed:${error.javaClass.simpleName}"))
         }
     }
 

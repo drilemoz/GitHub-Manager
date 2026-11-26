@@ -75,7 +75,7 @@ class _RepositoryDetailScreenState extends ConsumerState<RepositoryDetailScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // Ao voltar do instalador do Android, atualiza a versão sem reiniciar o app.
     if (state == AppLifecycleState.resumed && mounted) {
-      ref.invalidate(repositoryApkStatusProvider);
+      ref.invalidate(repositoryLocalApkProvider);
     }
   }
 
@@ -121,8 +121,16 @@ class _RepositoryDetailScreenState extends ConsumerState<RepositoryDetailScreen>
             );
 
             final apkStatusAsync = ref.watch(repositoryApkStatusProvider(repository));
-            final apkStatus = apkStatusAsync.asData?.value;
-            final assessment = apkStatus?.assessment;
+            final assessment = apkStatusAsync.value?.assessment;
+            final localApk = ref.watch(repositoryLocalApkProvider(repository));
+            final remoteApk = ref.watch(repositoryRemoteApkProvider(repository.fullName));
+            final knownWeb = infoAsync.hasValue && info.metadataIssue == null &&
+                info.technologies.any((t) => ['PHP', 'HTML', 'Node.js'].contains(t)) &&
+                !info.technologies.any((t) => ['Android', 'Flutter', 'Kotlin', 'Java'].contains(t));
+            final showApk = !knownWeb || info.applicationId != null ||
+                localApk.value?.packageName != null ||
+                remoteApk.value?.latest.isEmpty == false ||
+                remoteApk.value?.sourcesComplete != true;
 
             return CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -244,14 +252,19 @@ class _RepositoryDetailScreenState extends ConsumerState<RepositoryDetailScreen>
                     ),
                   ),
                 ),
-                if (assessment != null &&
-                    (assessment.packageName != null || apkStatus!.latest.isEmpty == false))
+                if (showApk)
                   SliverPadding(
                     padding: const EdgeInsets.fromLTRB(14, 7, 14, 0),
                     sliver: SliverToBoxAdapter(
                       child: _RepositoryApkInstallationStatus(
                         assessment: assessment,
-                        onRefresh: () => ref.invalidate(repositoryApkStatusProvider(repository)),
+                        local: localApk,
+                        remote: remoteApk,
+                        onRefresh: () {
+                          ref.invalidate(repositoryProjectInfoProvider(repository));
+                          ref.invalidate(repositoryLocalApkProvider(repository));
+                          ref.invalidate(repositoryRemoteApkProvider(repository.fullName));
+                        },
                       ),
                     ),
                   ),

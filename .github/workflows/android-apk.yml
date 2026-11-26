@@ -7,7 +7,7 @@ on:
       - main
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: android-apk-${{ github.ref }}
@@ -113,8 +113,8 @@ jobs:
           SOURCE="build/app/outputs/flutter-apk/app-release.apk"
           test -f "$SOURCE" || { echo "APK não foi gerado em $SOURCE" >&2; exit 1; }
 
-          unzip -l "$SOURCE" | grep -q 'lib/armeabi-v7a/libflutter.so' || { echo "APK sem armeabi-v7a (32-bit)" >&2; exit 1; }
-          unzip -l "$SOURCE" | grep -q 'lib/arm64-v8a/libflutter.so' || { echo "APK sem arm64-v8a (64-bit)" >&2; exit 1; }
+          unzip -l "$SOURCE" | grep 'lib/armeabi-v7a/libflutter.so' || { echo "APK sem armeabi-v7a (32-bit)" >&2; exit 1; }
+          unzip -l "$SOURCE" | grep 'lib/arm64-v8a/libflutter.so' || { echo "APK sem arm64-v8a (64-bit)" >&2; exit 1; }
 
           SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
           APKANALYZER="$(find "$SDK_ROOT/cmdline-tools" "$SDK_ROOT/tools" -type f -name apkanalyzer 2>/dev/null | head -n1 || true)"
@@ -131,6 +131,15 @@ jobs:
           VERSION="$(sed -n 's/^version:[[:space:]]*//p' pubspec.yaml | head -n1)"
           VERSION_NAME="${VERSION%%+*}"
           VERSION_CODE="${VERSION##*+}"
+          test "$("$APKANALYZER" manifest version-code "$SOURCE")" = "$VERSION_CODE"
+          test "$("$APKANALYZER" manifest version-name "$SOURCE")" = "$VERSION_NAME"
+          if [ "$SIGNING_MODE" = "official" ]; then
+            APKSIGNER="$(find "$SDK_ROOT/build-tools" -type f -name apksigner 2>/dev/null | sort -V | tail -n1 || true)"
+            test -x "$APKSIGNER"
+            EXPECTED_CERT="$(sed -n 's/^certificateSha256=//p' android/release-signing.properties | head -n1 | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+            ACTUAL_CERT="$("$APKSIGNER" verify --print-certs "$SOURCE" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n1 | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+            test "$ACTUAL_CERT" = "$EXPECTED_CERT" || { echo "Certificado oficial divergente"; exit 1; }
+          fi
           if [ "$SIGNING_MODE" = "official" ]; then
             FILE="GitHub-Manager-${VERSION_NAME}-${VERSION_CODE}-universal-release.apk"
           else
@@ -197,6 +206,12 @@ jobs:
           path: dist/build-info.json
           if-no-files-found: error
           retention-days: 14
+
+      - name: Publicar APK oficial em GitHub Releases
+        if: steps.signing.outputs.official == 'true' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash tool/publish_apk_release.sh "dist/${{ steps.package.outputs.file }}"
 
       - name: Resumo
         shell: bash

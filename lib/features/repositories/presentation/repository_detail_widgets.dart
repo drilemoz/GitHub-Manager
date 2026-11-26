@@ -1,178 +1,129 @@
 part of 'repository_detail_screen.dart';
 
-
 class _RepositoryApkInstallationStatus extends StatelessWidget {
   const _RepositoryApkInstallationStatus({
     required this.assessment,
+    required this.local,
+    required this.remote,
     required this.onRefresh,
   });
 
-  final ApkInstallationAssessment assessment;
+  final ApkInstallationAssessment? assessment;
+  final AsyncValue<RepositoryLocalApk> local;
+  final AsyncValue<RepositoryRemoteApk> remote;
   final VoidCallback onRefresh;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final (icon, accent, soft) = switch (assessment.state) {
-      ApkInstallationState.install => (
-        Icons.download_for_offline_outlined, scheme.primary,
-        scheme.primaryContainer.withValues(alpha: .35),
-      ),
-      ApkInstallationState.update => (
-        Icons.system_update_alt_rounded, scheme.primary,
-        scheme.primaryContainer.withValues(alpha: .35),
-      ),
-      ApkInstallationState.current => (
-        Icons.verified_rounded, Colors.green.shade700,
-        scheme.surfaceContainerLow,
-      ),
-      ApkInstallationState.versionMatches => (
-        Icons.rule_rounded, scheme.tertiary,
-        scheme.tertiaryContainer.withValues(alpha: .35),
-      ),
-      ApkInstallationState.newerInstalled => (
-        Icons.phone_android_rounded, scheme.primary,
-        scheme.primaryContainer.withValues(alpha: .35),
-      ),
-      ApkInstallationState.noApk => (
-        Icons.archive_outlined, scheme.onSurfaceVariant,
-        scheme.surfaceContainerLow,
-      ),
-      ApkInstallationState.unknown => (
-        Icons.help_outline_rounded, scheme.tertiary,
-        scheme.tertiaryContainer.withValues(alpha: .30),
-      ),
-    };
-    final installed = assessment.installedVersion?.trim();
-    final available = assessment.availableVersion?.trim();
-    final installedLabel = switch (assessment.state) {
-      ApkInstallationState.install => 'Não instalado',
-      _ => installed?.isNotEmpty == true ? installed! : 'Não confirmado',
-    };
-    final githubLabel = available?.isNotEmpty == true
-        ? available! : 'Não identificada';
-    final title = switch (assessment.state) {
-      ApkInstallationState.install => 'Aplicativo não encontrado',
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final installed = local.value?.installed;
+    final publication = remote.value;
+    final refreshing = local.isLoading || remote.isLoading;
+    final localConfirmed = installed?.status == InstalledAppQueryStatus.installed;
+    final localLabel = localConfirmed
+        ? (installed?.versionName?.isNotEmpty == true ? installed!.versionName! : 'Instalado')
+        : local.isLoading ? 'Verificando…'
+        : installed?.status == InstalledAppQueryStatus.notInstalled ? 'Não instalado'
+        : local.value?.packageName == null ? 'Pacote não identificado' : 'Não confirmado';
+    final remoteLabel = publication?.latest.isEmpty == false
+        ? publication!.latest.version ?? 'APK disponível'
+        : remote.isLoading ? 'Buscando…'
+        : publication?.sourcesComplete == true ? 'Sem publicação' : 'Consulta incompleta';
+    final status = refreshing ? 'Verificando versões…' : switch (assessment?.state) {
       ApkInstallationState.update => 'Atualização disponível',
-      ApkInstallationState.current => 'APK atualizado e confirmado',
-      ApkInstallationState.versionMatches => 'Versão igual, verificação parcial',
-      ApkInstallationState.newerInstalled => 'Versão mais nova no aparelho',
-      ApkInstallationState.noApk => 'Nenhum APK publicado',
-      ApkInstallationState.unknown => 'Verificação inconclusiva',
+      ApkInstallationState.current => 'Atualizado',
+      ApkInstallationState.versionMatches => 'Mesma versão informada',
+      ApkInstallationState.newerInstalled => 'Aparelho mais recente',
+      ApkInstallationState.install => 'Disponível para instalar',
+      _ => localConfirmed ? 'Instalado neste aparelho' : 'Status do APK',
     };
+    final accent = !refreshing && assessment?.state == ApkInstallationState.update
+        ? scheme.primary : scheme.onSurface;
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+      padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
       decoration: BoxDecoration(
-        color: soft,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: accent.withValues(alpha: .32)),
+        color: scheme.surface,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: scheme.outlineVariant),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          Container(
-            padding: const EdgeInsets.all(9),
-            decoration: BoxDecoration(
-              color: accent.withValues(alpha: .10),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, size: 23, color: accent),
-          ),
-          const SizedBox(width: 10),
-          Expanded(child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Status do APK',
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: scheme.onSurfaceVariant)),
-              Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w800, color: accent)),
-            ],
-          )),
-          IconButton(
-            tooltip: 'Verificar versão instalada novamente',
-            onPressed: onRefresh,
-            icon: const Icon(Icons.refresh_rounded),
-          ),
-        ]),
-        const SizedBox(height: 12),
-        Row(children: [
-          Expanded(child: _ApkVersionPanel(
-            label: 'Neste aparelho',
-            value: installedLabel,
-            code: assessment.installedCode,
-            icon: Icons.smartphone_outlined,
-          )),
+          Icon(Icons.android_rounded, size: 20, color: scheme.primary),
           const SizedBox(width: 8),
+          Expanded(child: Text(status, style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w700, color: accent))),
+          IconButton(
+            tooltip: 'Detalhes da verificação do APK',
+            onPressed: () => showDialog<void>(context: context, builder: (context) => AlertDialog(
+              title: const Text('Verificação do APK'),
+              content: SingleChildScrollView(child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('Pacote: ${local.value?.packageName ?? 'Não identificado'}'),
+                  if (installed?.versionCode != null) Text('VersionCode local: ${installed!.versionCode}'),
+                  if (installed?.reason != null) Text('Android: ${installed!.reason}'),
+                  if (local.hasError) const Text('Falha na consulta local.'),
+                  if (publication?.releaseError != null) const Text('Falha ao consultar Releases.'),
+                  if (publication?.artifactError != null) const Text('Falha ao consultar Artifacts.'),
+                  if (remote.hasError) const Text('Falha na consulta remota.'),
+                  if (assessment?.detail != null) Text(assessment!.detail!),
+                ],
+              )),
+              actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Fechar'))],
+            )),
+            icon: const Icon(Icons.info_outline_rounded, size: 19),
+          ),
+          IconButton(
+            tooltip: 'Verificar APK novamente',
+            onPressed: refreshing ? null : onRefresh,
+            icon: const Icon(Icons.refresh_rounded, size: 20),
+          ),
+        ]),
+        if (refreshing) const LinearProgressIndicator(minHeight: 2)
+        else const Divider(height: 1),
+        const SizedBox(height: 9),
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Expanded(child: _ApkVersionPanel(
-            label: 'No GitHub',
-            value: githubLabel,
-            code: assessment.availableCode,
+            label: 'Neste aparelho', value: localLabel,
+            icon: Icons.smartphone_outlined, confirmed: localConfirmed,
+          )),
+          Container(width: 1, height: 42, color: scheme.outlineVariant),
+          const SizedBox(width: 12),
+          Expanded(child: _ApkVersionPanel(
+            label: 'No GitHub', value: remoteLabel,
             icon: Icons.cloud_download_outlined,
+            confirmed: publication?.latest.isEmpty == false,
           )),
         ]),
-        if (assessment.packageName?.isNotEmpty == true) ...[
-          const SizedBox(height: 11),
-          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Icon(Icons.inventory_2_outlined, size: 16,
-              color: scheme.onSurfaceVariant),
-            const SizedBox(width: 6),
-            Expanded(child: Text(assessment.packageName!,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: scheme.onSurfaceVariant))),
-          ]),
-        ],
-        if (assessment.detail != null) ...[
-          const SizedBox(height: 9),
-          Text(assessment.detail!,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: scheme.onSurfaceVariant, height: 1.3)),
-        ],
       ]),
     );
   }
 }
 
 class _ApkVersionPanel extends StatelessWidget {
-  const _ApkVersionPanel({
-    required this.label,
-    required this.value,
-    required this.icon,
-    this.code,
-  });
+  const _ApkVersionPanel({required this.label, required this.value,
+    required this.icon, required this.confirmed});
   final String label;
   final String value;
   final IconData icon;
-  final int? code;
+  final bool confirmed;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: scheme.surface.withValues(alpha: .82),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: scheme.outlineVariant.withValues(alpha: .42)),
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Icon(icon, size: 15, color: scheme.onSurfaceVariant),
-          const SizedBox(width: 5),
-          Expanded(child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: scheme.onSurfaceVariant))),
-        ]),
-        const SizedBox(height: 6),
-        Text(value, maxLines: 2, overflow: TextOverflow.ellipsis,
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w800)),
-        if (code != null) ...[
-          const SizedBox(height: 3),
-          Text('Código $code', style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: scheme.onSurfaceVariant)),
-        ],
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [
+        Icon(icon, size: 15, color: scheme.onSurfaceVariant),
+        const SizedBox(width: 5),
+        Expanded(child: Text(label, style: theme.textTheme.labelMedium?.copyWith(
+          color: scheme.onSurfaceVariant))),
       ]),
-    );
+      const SizedBox(height: 4),
+      Text(value, style: theme.textTheme.titleSmall?.copyWith(
+        fontWeight: confirmed ? FontWeight.w700 : FontWeight.w500,
+        color: confirmed ? scheme.onSurface : scheme.onSurfaceVariant)),
+    ]);
   }
 }
 

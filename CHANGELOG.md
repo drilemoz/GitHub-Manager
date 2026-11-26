@@ -1,3 +1,19 @@
+## 2.0.151+200165 — 2026-11-26
+
+- Atualizador próprio: consulta automática após a tela inicial/novidades e manual em Opções.
+- Compara versionCode local e APK universal oficial de Releases estáveis; ignora rascunhos, pré-releases e APK de teste.
+- Download pelo gerenciador existente com progresso e instalação pelo Android, preservando dados quando a assinatura é compatível.
+- Workflow publica o APK assinado diretamente em Releases após validações e mantém Artifacts; sem assinatura oficial, gera apenas artifact de teste.
+- Mantém SDK 36, assinatura oficial e correções anteriores. Flutter analyze/test, build e publicação remota pendentes de CI.
+
+## 2.0.150+200164 — 2026-11-26
+
+- Consultas local e GitHub independentes, com identidade conhecida exclusivamente para `drilemoz/GitHub-Manager` e registro local de falhas da consulta Android.
+- Card compacto com fundo neutro, duas colunas, progresso, nova tentativa e detalhes técnicos sob demanda. Projetos web reconhecidos sem APK não exibem o card após consulta conclusiva.
+- Reconsulta local ao retornar ao app; atualização manual revalida metadados e fontes remotas. Não confunde pacote oculto por visibilidade com ausência confirmada.
+- Android compileSdk/targetSdk 36 explicitados; mantém as dependências existentes, assinatura e ordenação da 2.0.149.
+- Validação estática e sincronização de versões realizadas; Flutter analyze/test, APK e teste em aparelho pendentes.
+
 ## 2.0.149+200163 — 2026-11-25
 
 - Mantém os projetos fixados no topo e ordena os demais pela data do último push (`pushed_at`), em vez da atualização geral (`updated_at`).

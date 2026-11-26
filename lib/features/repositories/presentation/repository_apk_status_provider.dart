@@ -1,3 +1,7 @@
+import 'dart:async';
+
+import 'package:flutter/services.dart';
+import 'package:github_manager/core/telemetry/app_telemetry_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:github_manager/core/platform/platform_actions.dart';
 import 'package:github_manager/features/builds/domain/apk_installation_assessment.dart';
@@ -25,11 +29,67 @@ class RepositoryApkStatus {
   bool get sourcesUnavailable => releaseError != null && artifactError != null;
 }
 
-/// Carrega as duas fontes independentemente e consulta somente o pacote com
-/// applicationId identificado. Não enumera aplicativos do dispositivo.
-final repositoryApkStatusProvider = FutureProvider.autoDispose
-    .family<RepositoryApkStatus, GitHubRepository>((ref, repository) async {
-  final infoFuture = ref.watch(repositoryProjectInfoProvider(repository).future);
+/// Identidade conhecida do próprio produto, sem inferir pacotes de outros repos.
+String? ownRepositoryApplicationId(String fullName) =>
+    fullName.toLowerCase() == 'drilemoz/github-manager'
+        ? 'br.com.githubmanager.app' : null;
+
+class RepositoryLocalApk {
+  const RepositoryLocalApk(this.packageName, this.installed);
+  final String? packageName;
+  final InstalledAndroidApp? installed;
+}
+
+class RepositoryRemoteApk {
+  const RepositoryRemoteApk(this.latest, this.releaseError, this.artifactError);
+  final LatestApkShortcut latest;
+  final Object? releaseError;
+  final Object? artifactError;
+  bool get sourcesComplete => releaseError == null && artifactError == null;
+}
+
+final repositoryLocalApkProvider = FutureProvider.autoDispose
+    .family<RepositoryLocalApk, GitHubRepository>((ref, repository) async {
+  final ownId = ownRepositoryApplicationId(repository.fullName);
+  String? id = ownId;
+  if (id == null) {
+    try {
+      final info = await ref.watch(repositoryProjectInfoProvider(repository).future);
+      id = info.applicationId?.trim();
+    } catch (error, stack) {
+      unawaited(AppTelemetryService.instance.recordError(
+        source: 'apk_identity', error: error, stackTrace: stack));
+      return const RepositoryLocalApk(null, InstalledAndroidApp(
+        status: InstalledAppQueryStatus.unknown, reason: 'identity_unavailable'));
+    }
+  }
+  if (id != null && id.isNotEmpty) {
+    try {
+      final installed = await PlatformActions.getInstalledAppInfo(id)
+          .timeout(const Duration(seconds: 5));
+      if (installed.status == InstalledAppQueryStatus.unknown &&
+          installed.reason != 'package_visibility') {
+        unawaited(AppTelemetryService.instance.recordError(
+          source: 'apk_local', error: installed.reason ?? 'empty_result',
+          context: {'package': id}));
+      }
+      return RepositoryLocalApk(id, installed);
+    } catch (error, stack) {
+      unawaited(AppTelemetryService.instance.recordError(
+        source: 'apk_local', error: error, stackTrace: stack,
+        context: {'package': id}));
+      return RepositoryLocalApk(id, InstalledAndroidApp(
+        status: InstalledAppQueryStatus.unknown,
+        reason: error is PlatformException ? error.code :
+            error is TimeoutException ? 'timeout' : 'platform_unavailable'));
+    }
+  }
+  return const RepositoryLocalApk(null, null);
+});
+
+/// A busca remota não depende da identidade nem da consulta Android.
+final repositoryRemoteApkProvider = FutureProvider.autoDispose
+    .family<RepositoryRemoteApk, String>((ref, fullName) async {
   final service = ref.watch(artifactServiceProvider);
   List<ReleaseAsset> releases = const [];
   List<ActionArtifact> artifacts = const [];
@@ -38,7 +98,7 @@ final repositoryApkStatusProvider = FutureProvider.autoDispose
 
   Future<void> loadReleases() async {
     try {
-      releases = await service.listReleaseAssets(repository.fullName)
+      releases = await service.listReleaseAssets(fullName)
           .timeout(const Duration(seconds: 16));
     } catch (error) {
       releaseError = error;
@@ -47,7 +107,7 @@ final repositoryApkStatusProvider = FutureProvider.autoDispose
 
   Future<void> loadArtifacts() async {
     try {
-      artifacts = await service.listArtifacts(repository.fullName)
+      artifacts = await service.listArtifacts(fullName)
           .timeout(const Duration(seconds: 16));
     } catch (error) {
       artifactError = error;
@@ -55,35 +115,28 @@ final repositoryApkStatusProvider = FutureProvider.autoDispose
   }
 
   await Future.wait<void>([loadReleases(), loadArtifacts()]);
-  final info = await infoFuture;
-  final latest = LatestApkShortcut.resolve(
-    releases: releases,
-    artifacts: artifacts,
-  );
-  final id = info.applicationId?.trim();
-  InstalledAndroidApp? installed;
-  if (id != null && id.isNotEmpty) {
-    try {
-      installed = await PlatformActions.getInstalledAppInfo(id)
-          .timeout(const Duration(seconds: 5));
-    } catch (_) {
-      installed = const InstalledAndroidApp(
-        status: InstalledAppQueryStatus.unknown,
-        reason: 'platform_unavailable',
-      );
-    }
-  }
-  final assessment = ApkInstallationAssessment.evaluate(
-    applicationId: id,
-    installed: installed,
-    availableVersion: latest.version,
-    hasApk: !latest.isEmpty,
-    sourcesComplete: releaseError == null && artifactError == null,
-  );
+  return RepositoryRemoteApk(LatestApkShortcut.resolve(
+    releases: releases, artifacts: artifacts,
+  ), releaseError, artifactError);
+});
+
+/// Mantém o atalho de download compatível com as duas consultas independentes.
+final repositoryApkStatusProvider = FutureProvider.autoDispose
+    .family<RepositoryApkStatus, GitHubRepository>((ref, repository) async {
+  final localFuture = ref.watch(repositoryLocalApkProvider(repository).future);
+  final remoteFuture = ref.watch(repositoryRemoteApkProvider(repository.fullName).future);
+  final local = await localFuture;
+  final remote = await remoteFuture;
   return RepositoryApkStatus(
-    latest: latest,
-    assessment: assessment,
-    releaseError: releaseError,
-    artifactError: artifactError,
+    latest: remote.latest,
+    assessment: ApkInstallationAssessment.evaluate(
+      applicationId: local.packageName,
+      installed: local.installed,
+      availableVersion: remote.latest.version,
+      hasApk: !remote.latest.isEmpty,
+      sourcesComplete: remote.sourcesComplete,
+    ),
+    releaseError: remote.releaseError,
+    artifactError: remote.artifactError,
   );
 });

@@ -7,7 +7,7 @@ on:
       - "v*"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   release:
@@ -95,8 +95,8 @@ jobs:
         run: |
           set -euo pipefail
           APK="build/app/outputs/flutter-apk/app-release.apk"
-          unzip -l "$APK" | grep -q 'lib/armeabi-v7a/libflutter.so' || { echo "APK sem armeabi-v7a"; exit 1; }
-          unzip -l "$APK" | grep -q 'lib/arm64-v8a/libflutter.so' || { echo "APK sem arm64-v8a"; exit 1; }
+          unzip -l "$APK" | grep 'lib/armeabi-v7a/libflutter.so' || { echo "APK sem armeabi-v7a"; exit 1; }
+          unzip -l "$APK" | grep 'lib/arm64-v8a/libflutter.so' || { echo "APK sem arm64-v8a"; exit 1; }
           SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
           APKANALYZER="$(find "$SDK_ROOT/cmdline-tools" "$SDK_ROOT/tools" -type f -name apkanalyzer 2>/dev/null | head -n1 || true)"
           APKSIGNER="$(find "$SDK_ROOT/build-tools" -type f -name apksigner 2>/dev/null | sort -V | tail -n1 || true)"
@@ -106,6 +106,12 @@ jobs:
           EXPECTED_CERT="$(sed -n 's/^certificateSha256=//p' android/release-signing.properties | head -n1 | tr -d ':' | tr '[:upper:]' '[:lower:]')"
           ACTUAL_ID="$("$APKANALYZER" manifest application-id "$APK")"
           ACTUAL_CERT="$("$APKSIGNER" verify --print-certs "$APK" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n1 | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+          VERSION="$(sed -n 's/^version:[[:space:]]*//p' pubspec.yaml | head -n1)"
+          test "$("$APKANALYZER" manifest version-code "$APK")" = "${VERSION##*+}"
+          test "$("$APKANALYZER" manifest version-name "$APK")" = "${VERSION%%+*}"
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            test "$GITHUB_REF_NAME" = "v${VERSION%%+*}"
+          fi
           test "$ACTUAL_ID" = "$EXPECTED_ID" || { echo "applicationId incorreto: $ACTUAL_ID"; exit 1; }
           if [ "$ACTUAL_CERT" != "$EXPECTED_CERT" ]; then
             echo "Certificado não corresponde à assinatura oficial"
@@ -135,6 +141,12 @@ jobs:
           # APK direto: evita ZIP externo/compressão adicional e acelera o download.
           archive: false
           if-no-files-found: error
+
+      - name: Publicar APK em GitHub Releases
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash tool/publish_apk_release.sh "dist/${{ steps.package.outputs.file }}"
 
       - name: Limpar material de assinatura
         if: always()

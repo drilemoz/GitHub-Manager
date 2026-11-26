@@ -22,6 +22,7 @@ import 'package:github_manager/features/repositories/data/repository_description
 import 'package:github_manager/features/uploads/data/upload_recovery_settings.dart';
 import 'package:github_manager/features/projects/data/upload_safety_settings.dart';
 import 'package:github_manager/features/downloads/data/download_cleanup_settings.dart';
+import 'package:github_manager/features/update/presentation/self_update_dialog.dart';
 import 'package:github_manager/features/update/presentation/update_whats_new_screen.dart';
 import 'package:go_router/go_router.dart';
 
@@ -404,6 +405,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
           const SizedBox(height: 18),
           const _SectionTitle('Versão instalada'),
           const _InstalledVersionCard(),
+          Card(child: ListTile(
+            leading: const Icon(Icons.system_update_rounded),
+            title: const Text('Verificar atualizações'),
+            subtitle: const Text('Buscar APK oficial do GitHub Manager'),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => SelfUpdateCoordinator.check(manual: true),
+          )),
           const SizedBox(height: 18),
           const _SectionTitle('Sobre e novidades'),
           Card(
@@ -435,16 +443,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                   children: const [
                     _ChangeNote(
+                      version: '2.0.151',
+                      text: 'Atualizador próprio com APK oficial em GitHub Releases, progresso e instalador Android.',
+                    ),
+                    _ChangeNote(
+                      version: '2.0.150',
+                      text: 'Verificação local e remota do APK independentes, card compacto e diagnóstico de falhas.',
+                    ),
+                    _ChangeNote(
                       version: '2.0.149',
                       text: 'Ordena pelo último push, mantém fixados no topo e atualiza a lista após envios com alterações.',
-                    ),
-                    _ChangeNote(
-                      version: '2.0.148',
-                      text: 'Corrige o teste de cantos do workflow #137 sem desfazer a interface redesenhada do projeto e do Drive.',
-                    ),
-                    _ChangeNote(
-                      version: '2.0.147',
-                      text: 'Configuração OAuth do Drive no app, SHA-1 do APK, verificação honesta de versões e nova organização visual.',
                     ),
                   ],
                 ),

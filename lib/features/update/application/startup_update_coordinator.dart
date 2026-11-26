@@ -6,6 +6,7 @@ import 'package:github_manager/core/persistence/local_database.dart';
 import 'package:github_manager/core/platform/platform_actions.dart';
 import 'package:github_manager/core/telemetry/app_telemetry_service.dart';
 import 'package:github_manager/core/widgets/installed_version_banner.dart';
+import 'package:github_manager/features/update/presentation/self_update_dialog.dart';
 import 'package:github_manager/features/update/presentation/update_whats_new_screen.dart';
 
 /// Abre as novidades somente depois que a Activity e a primeira interface
@@ -31,7 +32,7 @@ class StartupUpdateCoordinator with WidgetsBindingObserver {
   int _readinessRetries = 0;
 
   /// Um toque de notificação deve priorizar o evento, não a tela de novidades.
-  void suppressAutomaticForNotification() => _finishForProcess();
+  void suppressAutomaticForNotification() => _finishForProcess(checkForUpdate: false);
 
   void start() {
     if (_started || _finishedForProcess) return;
@@ -225,9 +226,10 @@ class StartupUpdateCoordinator with WidgetsBindingObserver {
     return _readinessRetries <= _maxReadinessRetries;
   }
 
-  void _finishForProcess() {
+  void _finishForProcess({bool checkForUpdate = true}) {
     if (_finishedForProcess) return;
     _finishedForProcess = true;
     WidgetsBinding.instance.removeObserver(this);
+    if (checkForUpdate) unawaited(SelfUpdateCoordinator.check());
   }
 }

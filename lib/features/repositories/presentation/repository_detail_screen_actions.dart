@@ -69,7 +69,8 @@ mixin _RepositoryDetailScreenActions on ConsumerState<RepositoryDetailScreen> {
       ref.invalidate(repositoryArtifactsProvider(widget.repositoryFullName));
       ref.invalidate(repositoryReleaseAssetsProvider(widget.repositoryFullName));
     }
-    ref.invalidate(repositoryApkStatusProvider);
+    ref.invalidate(repositoryLocalApkProvider);
+    ref.invalidate(repositoryRemoteApkProvider);
     final repository = widget.readOnly
         ? ref.read(repositoryServiceProvider).getRepository(widget.repositoryFullName)
         : _loadRepository();

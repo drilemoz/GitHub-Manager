@@ -59,6 +59,7 @@ final repositoryProjectInfoProvider = FutureProvider.autoDispose
       .timeout(
         const Duration(seconds: 18),
         onTimeout: () => RepositoryProjectInfo(
+          metadataIssue: 'Tempo limite ao consultar metadados.',
           projectName: repository.name,
           version: null,
           technologies: [

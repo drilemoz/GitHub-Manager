@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class UpdateWhatsNewScreen extends StatelessWidget {
-  static const releaseNotesVersion = '2.0.149';
+  static const releaseNotesVersion = '2.0.151';
 
   const UpdateWhatsNewScreen({
     required this.versionLabel,
@@ -69,21 +69,21 @@ class UpdateWhatsNewScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 24),
                     const _UpdateItem(
-                      icon: Icons.sort_rounded,
-                      title: 'Projetos recentes na ordem correta',
-                      description: 'Os projetos são ordenados pelo último push, não por alterações de descrição ou outros metadados.',
+                      icon: Icons.android_rounded,
+                      title: 'Atualização própria',
+                      description: 'Consulta automática ao abrir e manual em Opções, com comparação de versionCode.',
                     ),
                     const SizedBox(height: 12),
                     const _UpdateItem(
-                      icon: Icons.push_pin_outlined,
-                      title: 'Fixados continuam no topo',
-                      description: 'Seus favoritos permanecem acima dos demais projetos, com os filtros e opções de ordenação preservados.',
+                      icon: Icons.view_agenda_outlined,
+                      title: 'APK oficial em Releases',
+                      description: 'O workflow publica o APK universal assinado em GitHub Releases, além de Artifacts.',
                     ),
                     const SizedBox(height: 12),
                     const _UpdateItem(
                       icon: Icons.refresh_rounded,
-                      title: 'Lista atualizada após envio',
-                      description: 'Quando o envio altera o repositório, a lista e as informações dos projetos são atualizadas sem esperar a build.',
+                      title: 'Download e instalação',
+                      description: 'Acompanhe o progresso e confirme a atualização no instalador do Android.',
                     ),
                   ],
                 ),

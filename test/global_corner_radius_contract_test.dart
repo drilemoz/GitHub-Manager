@@ -13,9 +13,9 @@ void main() {
         16: 1,
       },
       'lib/features/repositories/presentation/repository_detail_widgets.dart': {
-        12: 4,
+        12: 2,
         14: 2,
-        16: 2,
+        16: 1,
       },
     };
 

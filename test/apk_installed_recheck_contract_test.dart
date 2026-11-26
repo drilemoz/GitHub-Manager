@@ -17,6 +17,10 @@ void main() {
     expect(source, contains('codesAvailable ? ApkInstallationState.current'));
     final detail = File('lib/features/repositories/presentation/repository_detail_screen.dart')
         .readAsStringSync();
-    expect(detail, contains('onRefresh: () => ref.invalidate(repositoryApkStatusProvider(repository))'));
+    expect(detail, contains('ref.invalidate(repositoryLocalApkProvider(repository))'));
+    expect(detail, contains('ref.invalidate(repositoryRemoteApkProvider(repository.fullName))'));
+    expect(detail, contains('ref.invalidate(repositoryProjectInfoProvider(repository))'));
+    expect(detail, contains('if (showApk)'));
+    expect(detail, isNot(contains('if (assessment != null &&')));
   });
 }

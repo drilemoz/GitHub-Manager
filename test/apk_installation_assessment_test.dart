@@ -122,6 +122,17 @@ void main() {
     expect(result.state, ApkInstallationState.unknown);
   });
 
+  test('instalação confirmada continua visível sem APK remoto', () {
+    for (final complete in [true, false]) {
+      final result = ApkInstallationAssessment.evaluate(
+        applicationId: 'br.exemplo.vigia', installed: _installed,
+        availableVersion: null, hasApk: false, sourcesComplete: complete,
+      );
+      expect(result.installedVersion, '1.0.230');
+      expect(result.installedCode, 230);
+    }
+  });
+
   test('parser do canal nativo preserva longVersionCode', () {
     final parsed = InstalledAndroidApp.fromMap({
       'status': 'installed',

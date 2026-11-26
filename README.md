@@ -1,4 +1,8 @@
-# GitHub Manager 2.0.149
+# GitHub Manager 2.0.151
+
+> Versão 2.0.151+200165: atualizador próprio e publicação automática do APK oficial em Releases. Consulte docs/RELEASE_2.0.151.md.
+
+> Versão 2.0.150+200164: card compacto de APK, verificação local e GitHub independentes e diagnóstico de falhas. SDK Android 36. Testes Flutter e APK pendentes no Actions.
 
 > Versão 2.0.149+200163: fixados permanecem no topo; demais projetos ordenados pelo último push. Atualização das listas e versões após envio com alterações. Testes Flutter e APK pendentes no Actions.
 

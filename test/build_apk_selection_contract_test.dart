@@ -35,8 +35,8 @@ void main() {
     ).readAsStringSync();
     expect(actions, contains('repositoryApkStatusProvider(repository).future'));
     expect(actions, contains('final latest = apkStatus.latest;'));
-    expect(statusProvider, contains('service.listReleaseAssets(repository.fullName)'));
-    expect(statusProvider, contains('service.listArtifacts(repository.fullName)'));
+    expect(statusProvider, contains('service.listReleaseAssets(fullName)'));
+    expect(statusProvider, contains('service.listArtifacts(fullName)'));
     expect(statusProvider, contains('Future.wait<void>([loadReleases(), loadArtifacts()])'));
     expect(statusProvider, contains('LatestApkShortcut.resolve('));
     expect(statusProvider, contains('ApkInstallationAssessment.evaluate('));
