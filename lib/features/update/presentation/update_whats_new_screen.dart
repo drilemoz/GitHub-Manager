@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class UpdateWhatsNewScreen extends StatelessWidget {
-  static const releaseNotesVersion = '2.0.153';
+  static const releaseNotesVersion = '2.0.154';
 
   const UpdateWhatsNewScreen({
     required this.versionLabel,
@@ -69,21 +69,9 @@ class UpdateWhatsNewScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 24),
                     const _UpdateItem(
-                      icon: Icons.play_circle_outline_rounded,
-                      title: 'Builds reorganizadas',
-                      description: 'Branch, execução, envio e atualização reunidos em um painel compacto.',
-                    ),
-                    const SizedBox(height: 12),
-                    const _UpdateItem(
-                      icon: Icons.cloud_upload_outlined,
-                      title: 'Enviar projeto nas Builds',
-                      description: 'Abra o seletor ZIP e confirme o envio com a branch atual pré-selecionada.',
-                    ),
-                    const SizedBox(height: 12),
-                    const _UpdateItem(
-                      icon: Icons.tune_rounded,
-                      title: 'Mais ações em um menu',
-                      description: 'APKs, diagnóstico, permissões, armazenamento e seleção continuam disponíveis.',
+                      icon: Icons.visibility_outlined,
+                      title: 'Visibilidade dos repositórios',
+                      description: 'Os cartões mostram Público ou Privado ao lado do tamanho, conforme a visibilidade informada pelo GitHub.',
                     ),
                   ],
                 ),

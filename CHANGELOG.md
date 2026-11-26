@@ -1,3 +1,10 @@
+## 2.0.154+200168 — 2026-11-26
+
+- Exibe Público ou Privado ao lado do tamanho, usando a visibilidade retornada pelo GitHub.
+- Permite duas linhas no título quando necessário para reduzir truncamento.
+- Preserva ordenação, fixados, filtros, workflows e SDK 36.
+- Flutter analyze/test, build e conferência visual pendentes de CI.
+
 ## 2.0.153+200167 — 2026-11-26
 
 - Reorganiza a parte superior das Builds por repositório: branch, executar, enviar, atualizar e menu de ações.

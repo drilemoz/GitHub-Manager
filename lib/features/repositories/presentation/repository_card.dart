@@ -64,7 +64,7 @@ class RepositoryCard extends ConsumerWidget {
                 children: [
                   Expanded(
                     child: RichText(
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       text: TextSpan(
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -86,6 +86,22 @@ class RepositoryCard extends ConsumerWidget {
                           if (repository.sizeKb > 0)
                             TextSpan(
                               text: '  •  ${formatRepositorySize(repository.sizeKb)}',
+                              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                    color: scheme.onSurfaceVariant,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                            ),
+                          if (repository.isPrivate)
+                            TextSpan(
+                              text: '  •  Privado',
+                              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                    color: scheme.primary,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                            )
+                          else
+                            TextSpan(
+                              text: '  •  Público',
                               style: Theme.of(context).textTheme.labelMedium?.copyWith(
                                     color: scheme.onSurfaceVariant,
                                     fontWeight: FontWeight.w600,

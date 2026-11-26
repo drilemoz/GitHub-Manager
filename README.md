@@ -1,4 +1,6 @@
-# GitHub Manager 2.0.153
+# GitHub Manager 2.0.154
+
+> Versão 2.0.154+200168: visibilidade Pública/Privada junto ao tamanho dos repositórios. Consulte docs/RELEASE_2.0.154.md.
 
 > Versão 2.0.153+200167: Builds com painel compacto, envio de ZIP direto e menu de ações. Consulte docs/RELEASE_2.0.153.md.
 
