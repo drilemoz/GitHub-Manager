@@ -1,4 +1,6 @@
-# GitHub Manager 2.0.148
+# GitHub Manager 2.0.149
+
+> Versão 2.0.149+200163: fixados permanecem no topo; demais projetos ordenados pelo último push. Atualização das listas e versões após envio com alterações. Testes Flutter e APK pendentes no Actions.
 
 > Versão 2.0.148+200162: correção do contrato visual do workflow Android APK #137. Os novos cantos dos cartões de projeto e Google Drive da 2.0.147 foram mantidos; o teste agora aceita somente exceções específicas, com quantidades exatas, sem flexibilizar outras telas. Não muda o código de produção. Flutter/Android precisam ser revalidados no Actions.
 

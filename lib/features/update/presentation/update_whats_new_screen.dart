@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class UpdateWhatsNewScreen extends StatelessWidget {
-  static const releaseNotesVersion = '2.0.148';
+  static const releaseNotesVersion = '2.0.149';
 
   const UpdateWhatsNewScreen({
     required this.versionLabel,
@@ -69,27 +69,21 @@ class UpdateWhatsNewScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 24),
                     const _UpdateItem(
-                      icon: Icons.cloud_done_outlined,
-                      title: 'Correção dos testes visuais da versão 2.0.147',
-                      description: 'O contrato de cantos reconhece somente os cartões redesenhados nas telas do projeto e do Drive, mantendo a validação global.',
+                      icon: Icons.sort_rounded,
+                      title: 'Projetos recentes na ordem correta',
+                      description: 'Os projetos são ordenados pelo último push, não por alterações de descrição ou outros metadados.',
                     ),
                     const SizedBox(height: 12),
                     const _UpdateItem(
-                      icon: Icons.phone_android_rounded,
-                      title: 'Verificação mais precisa de APKs instalados',
-                      description: 'Versão visível igual não é mais apresentada como atualização confirmada sem versionCode remoto; consulte novamente com um toque.',
+                      icon: Icons.push_pin_outlined,
+                      title: 'Fixados continuam no topo',
+                      description: 'Seus favoritos permanecem acima dos demais projetos, com os filtros e opções de ordenação preservados.',
                     ),
                     const SizedBox(height: 12),
                     const _UpdateItem(
-                      icon: Icons.dashboard_customize_outlined,
-                      title: 'Tela do projeto reorganizada',
-                      description: 'Nome do projeto, ações rápidas e comparação de versões têm mais espaço e melhor leitura.',
-                    ),
-                    const SizedBox(height: 12),
-                    const _UpdateItem(
-                      icon: Icons.shield_outlined,
-                      title: 'Segurança preservada',
-                      description: 'Google Drive permanece somente leitura; versões incertas, exclusões e permissões inconclusivas continuam protegidas.',
+                      icon: Icons.refresh_rounded,
+                      title: 'Lista atualizada após envio',
+                      description: 'Quando o envio altera o repositório, a lista e as informações dos projetos são atualizadas sem esperar a build.',
                     ),
                   ],
                 ),

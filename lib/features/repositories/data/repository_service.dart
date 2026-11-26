@@ -3,6 +3,7 @@ import 'package:github_manager/core/network/github_api_client.dart';
 import 'package:github_manager/core/persistence/local_database.dart';
 import 'package:github_manager/features/repositories/domain/github_repository.dart';
 import 'package:github_manager/features/repositories/domain/repository_name_rules.dart';
+import 'package:github_manager/features/repositories/domain/repository_list_sort.dart';
 
 class RepositoryService {
   RepositoryService(this._client, this._database);
@@ -20,6 +21,22 @@ class RepositoryService {
   void _rememberRepository(GitHubRepository repository) {
     if (repository.fullName.isNotEmpty) {
       _repositoryCache[repository.fullName.toLowerCase()] = repository;
+    }
+  }
+
+  // Deixe consultas anteriores ao push terminarem antes de invalidar as listas.
+  Future<void> waitForPendingListRefreshes() async {
+    final pending = [
+      _repositoriesRefreshInFlight,
+      _followedRefreshInFlight,
+    ];
+    for (final future in pending) {
+      if (future == null) continue;
+      try {
+        await future;
+      } catch (_) {
+        // A próxima consulta fará uma nova tentativa.
+      }
     }
   }
 
@@ -46,7 +63,7 @@ class RepositoryService {
         '/user/repos',
         queryParameters: {
           'affiliation': 'owner,collaborator,organization_member',
-          'sort': 'updated',
+          'sort': 'pushed',
           'direction': 'desc',
           'per_page': 100,
           'page': page,
@@ -70,7 +87,7 @@ class RepositoryService {
       // Fixados são estado local auxiliar. Uma falha no SQLite nunca pode
       // impedir a lista principal, que já foi carregada corretamente do GitHub.
     }
-    return repositories;
+    return sortRepositories(repositories, sort: RepositorySort.updatedDesc);
   }
 
   Future<Set<int>> listFavoriteRepositoryIds() =>
@@ -139,12 +156,10 @@ class RepositoryService {
       names = names.where((name) => !unavailable.contains(name.toLowerCase())).toList(growable: false);
       await _database.putJson(_followedKey, names);
     }
-    resolved.sort((a, b) => (b.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0))
-        .compareTo(a.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0)));
     if (resolved.isEmpty && names.isNotEmpty && firstFailure != null) {
       throw firstFailure!;
     }
-    return resolved;
+    return sortRepositories(resolved, sort: RepositorySort.updatedDesc);
   }
 
   Future<GitHubRepository?> getFollowedRepository(String fullName) async {
@@ -224,7 +239,7 @@ class RepositoryService {
       final response = await _client.get<List<dynamic>>(
         '/users/$owner/repos',
         queryParameters: {
-          'sort': 'updated',
+          'sort': 'pushed',
           'direction': 'desc',
           'per_page': 100,
           'page': page,

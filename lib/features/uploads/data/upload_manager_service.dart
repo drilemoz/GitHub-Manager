@@ -45,6 +45,7 @@ class UploadManagerService {
     Future<Directory> Function()? queueDirectoryFactory,
     UploadForegroundController? foregroundController,
     Future<bool> Function()? automaticRecoveryEnabled,
+    void Function()? onRepositoryChanged,
     bool restoreHistory = true,
     Duration persistDebounce = const Duration(milliseconds: 650),
   })  : _uploadZip = (({
@@ -87,6 +88,7 @@ class UploadManagerService {
               verificationDelay: verificationDelay,
               postDispatchDelay: postDispatchDelay,
             )),
+        _onRepositoryChanged = onRepositoryChanged,
         _historyFileFactory = historyFileFactory,
         _queueDirectoryFactory = queueDirectoryFactory,
         _foregroundController = foregroundController ??
@@ -110,11 +112,13 @@ class UploadManagerService {
     Future<Directory> Function()? queueDirectoryFactory,
     UploadForegroundController? foregroundController,
     Future<bool> Function()? automaticRecoveryEnabled,
+    void Function()? onRepositoryChanged,
     bool restoreHistory = false,
     Duration persistDebounce = Duration.zero,
     bool runBackgroundQueue = true,
   })  : _uploadZip = uploadZip,
         _ensureBuild = ensureBuild,
+        _onRepositoryChanged = onRepositoryChanged,
         _historyFileFactory = historyFileFactory,
         _queueDirectoryFactory = queueDirectoryFactory,
         _foregroundController = foregroundController,
@@ -130,6 +134,7 @@ class UploadManagerService {
     }
   }
 
+  final void Function()? _onRepositoryChanged;
   final ProjectUploadExecutor _uploadZip;
   final BuildEnsureExecutor _ensureBuild;
   final Future<File> Function()? _historyFileFactory;
@@ -509,6 +514,13 @@ class UploadManagerService {
       item.uploadedBlobShas.clear();
       item.addLog('Checkpoint do commit salvo em disco');
       _emit();
+      if (result.changed && !_disposed) {
+        try {
+          _onRepositoryChanged?.call();
+        } catch (_) {
+          // Atualizar a Home é auxiliar e não pode transformar um push em falha.
+        }
+      }
       await _persistHistory();
 
       if (!result.changed) {

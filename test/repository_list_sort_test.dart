@@ -8,6 +8,7 @@ void main() {
     required String name,
     required int sizeKb,
     required DateTime updatedAt,
+    DateTime? pushedAt,
   }) =>
       GitHubRepository(
         id: id,
@@ -17,6 +18,7 @@ void main() {
         isArchived: false,
         defaultBranch: 'main',
         updatedAt: updatedAt,
+        pushedAt: pushedAt,
         htmlUrl: 'https://github.com/owner/$name',
         sizeKb: sizeKb,
       );
@@ -48,6 +50,35 @@ void main() {
     );
 
     expect(result.map((item) => item.id), [alpha.id, beta.id, gamma.id]);
+  });
+
+  test('push date wins over metadata changes while pins stay first', () {
+    final olderPush = repository(
+      id: 4, name: 'older-push', sizeKb: 1,
+      updatedAt: DateTime.utc(2026, 11, 25),
+      pushedAt: DateTime.utc(2026, 11, 20),
+    );
+    final newerPush = repository(
+      id: 5, name: 'newer-push', sizeKb: 1,
+      updatedAt: DateTime.utc(2026, 11, 21),
+      pushedAt: DateTime.utc(2026, 11, 24),
+    );
+    final fallback = repository(
+      id: 6, name: 'fallback', sizeKb: 1,
+      updatedAt: DateTime.utc(2026, 11, 22),
+    );
+    final source = [olderPush, newerPush, alpha, fallback];
+    expect(
+      sortRepositories(source, sort: RepositorySort.updatedDesc,
+          favoriteIds: {alpha.id}).map((item) => item.id),
+      [1, 5, 6, 4],
+    );
+    expect(
+      sortRepositories(source, sort: RepositorySort.updatedAsc,
+          favoriteIds: {alpha.id}).map((item) => item.id),
+      [1, 4, 6, 5],
+    );
+    expect(source.map((item) => item.id), [4, 5, 1, 6]);
   });
 
   test('size sorting works in both directions', () {

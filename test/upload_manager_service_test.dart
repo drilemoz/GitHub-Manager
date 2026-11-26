@@ -20,6 +20,7 @@ void main() {
   });
 
   test('queues uploads sequentially and ignores active duplicate', () async {
+    final refreshEvents = <String>[];
     var activeUploads = 0;
     var maxConcurrent = 0;
     var uploadCount = 0;
@@ -63,6 +64,7 @@ void main() {
       required Duration verificationDelay,
       required Duration postDispatchDelay,
     }) async {
+      refreshEvents.add('build:$repositoryFullName');
       onStatus?.call('Build encontrada');
       return RepositoryBuildLaunchResult(
         commitSha: commitSha,
@@ -76,6 +78,7 @@ void main() {
     final manager = UploadManagerService.forTest(
       uploadZip: upload,
       ensureBuild: ensure,
+      onRepositoryChanged: () => refreshEvents.add('push'),
       historyFileFactory: () async => history,
       queueDirectoryFactory: () async => Directory('${temp.path}/queue'),
     );
@@ -106,6 +109,7 @@ void main() {
 
     expect(maxConcurrent, 1);
     expect(uploadCount, 2);
+    expect(refreshEvents, ['push', 'build:owner/first', 'push', 'build:owner/second']);
     expect(
       manager.items.every((item) => item.status == ManagedUploadStatus.completed),
       isTrue,
@@ -297,6 +301,7 @@ void main() {
   test('no-change upload can run current commit build without reuploading', () async {
     var uploadCount = 0;
     var buildCount = 0;
+    var refreshCount = 0;
 
     Future<ProjectUploadResult> upload({
       required ZipProjectPreview project,
@@ -340,6 +345,7 @@ void main() {
     final manager = UploadManagerService.forTest(
       uploadZip: upload,
       ensureBuild: ensure,
+      onRepositoryChanged: () { refreshCount++; },
       historyFileFactory: () async => File('${temp.path}/history.json'),
       queueDirectoryFactory: () async => Directory('${temp.path}/queue'),
     );
@@ -363,6 +369,7 @@ void main() {
     expect(buildCount, 1);
     expect(item.status, ManagedUploadStatus.completed);
     expect(item.workflowRunId, 99);
+    expect(refreshCount, 0);
   });
 
   test('upload failure preserves GitHub response and exact operation', () async {

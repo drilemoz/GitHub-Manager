@@ -7,6 +7,7 @@ class GitHubRepository {
     required this.isArchived,
     required this.defaultBranch,
     required this.updatedAt,
+    this.pushedAt,
     required this.htmlUrl,
     this.sizeKb = 0,
     this.description,
@@ -24,6 +25,10 @@ class GitHubRepository {
   final String? language;
   final String? homepage;
   final DateTime? updatedAt;
+  final DateTime? pushedAt;
+
+  /// Último push; updatedAt é fallback para respostas antigas ou incompletas.
+  DateTime? get lastCodeActivityAt => pushedAt ?? updatedAt;
   final String htmlUrl;
   /// Repository size reported by the GitHub REST API, in kilobytes.
   final int sizeKb;
@@ -39,6 +44,7 @@ class GitHubRepository {
         language: json['language'] as String?,
         homepage: json['homepage'] as String?,
         updatedAt: DateTime.tryParse(json['updated_at'] as String? ?? ''),
+        pushedAt: DateTime.tryParse(json['pushed_at'] as String? ?? ''),
         htmlUrl: json['html_url'] as String? ?? '',
         sizeKb: (json['size'] as num?)?.toInt() ?? 0,
       );
@@ -58,6 +64,7 @@ class GitHubRepository {
         other.language == language &&
         other.homepage == homepage &&
         other.updatedAt == updatedAt &&
+        other.pushedAt == pushedAt &&
         other.htmlUrl == htmlUrl &&
         other.sizeKb == sizeKb;
   }
@@ -74,6 +81,7 @@ class GitHubRepository {
         language,
         homepage,
         updatedAt,
+        pushedAt,
         htmlUrl,
         sizeKb,
       );
@@ -89,6 +97,7 @@ class GitHubRepository {
         'language': language,
         'homepage': homepage,
         'updated_at': updatedAt?.toIso8601String(),
+        'pushed_at': pushedAt?.toIso8601String(),
         'html_url': htmlUrl,
         'size': sizeKb,
       };

@@ -435,16 +435,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                   children: const [
                     _ChangeNote(
+                      version: '2.0.149',
+                      text: 'Ordena pelo último push, mantém fixados no topo e atualiza a lista após envios com alterações.',
+                    ),
+                    _ChangeNote(
                       version: '2.0.148',
                       text: 'Corrige o teste de cantos do workflow #137 sem desfazer a interface redesenhada do projeto e do Drive.',
                     ),
                     _ChangeNote(
                       version: '2.0.147',
                       text: 'Configuração OAuth do Drive no app, SHA-1 do APK, verificação honesta de versões e nova organização visual.',
-                    ),
-                    _ChangeNote(
-                      version: '2.0.146',
-                      text: 'Corrige contrato de testes do workflow #135 para permitir proteção configurável nos envios.',
                     ),
                   ],
                 ),

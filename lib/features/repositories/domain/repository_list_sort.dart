@@ -22,14 +22,16 @@ List<GitHubRepository> sortRepositories(
     if (favoriteOrder != 0) return favoriteOrder;
 
     final result = switch (sort) {
-      RepositorySort.updatedDesc => _compareUpdated(b, a),
-      RepositorySort.updatedAsc => _compareUpdated(a, b),
+      RepositorySort.updatedDesc => _compareCodeActivity(b, a),
+      RepositorySort.updatedAsc => _compareCodeActivity(a, b),
       RepositorySort.nameAsc => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
       RepositorySort.sizeDesc => b.sizeKb.compareTo(a.sizeKb),
       RepositorySort.sizeAsc => a.sizeKb.compareTo(b.sizeKb),
     };
     if (result != 0) return result;
-    return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+    final nameOrder = a.name.toLowerCase().compareTo(b.name.toLowerCase());
+    if (nameOrder != 0) return nameOrder;
+    return a.id.compareTo(b.id);
   });
   return items;
 }
@@ -45,8 +47,8 @@ int _favoriteOrder(
   return aFavorite ? -1 : 1;
 }
 
-int _compareUpdated(GitHubRepository a, GitHubRepository b) {
-  final aValue = a.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-  final bValue = b.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+int _compareCodeActivity(GitHubRepository a, GitHubRepository b) {
+  final aValue = a.lastCodeActivityAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+  final bValue = b.lastCodeActivityAt ?? DateTime.fromMillisecondsSinceEpoch(0);
   return aValue.compareTo(bValue);
 }

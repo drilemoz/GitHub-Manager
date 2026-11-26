@@ -1,3 +1,10 @@
+## 2.0.149+200163 — 2026-11-25
+
+- Mantém os projetos fixados no topo e ordena os demais pela data do último push (`pushed_at`), em vez da atualização geral (`updated_at`).
+- Usa `updated_at` apenas quando não houver data de push; preserva os filtros, a ordenação por nome/tamanho e a ordem inversa de datas.
+- Após um envio com alterações confirmadas, invalida listas e informações dos projetos antes de depender da conclusão da build. Envios sem mudanças não disparam a atualização.
+- Adiciona regressões para datas divergentes, fixados, serialização e evento de atualização após push. Flutter/Dart e build Android não executados neste ambiente.
+
 ## 2.0.148+200162 — 2026-11-09
 
 - Corrige o teste `global_corner_radius_contract_test.dart` que bloqueou o Android APK #137 após **316 testes aprovados e 1 reprovado**.

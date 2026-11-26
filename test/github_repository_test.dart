@@ -12,6 +12,7 @@ void main() {
       'default_branch': 'main',
       'language': 'Dart',
       'updated_at': '2026-08-26T08:00:00Z',
+      'pushed_at': '2026-08-25T09:00:00Z',
       'html_url': 'https://github.com/owner/github-manager',
       'size': 18842,
     });
@@ -22,6 +23,9 @@ void main() {
     expect(repository.language, 'Dart');
     expect(repository.sizeKb, 18842);
     expect(repository.toJson()['size'], 18842);
+    expect(repository.pushedAt, DateTime.utc(2026, 8, 25, 9));
+    expect(repository.lastCodeActivityAt, repository.pushedAt);
+    expect(GitHubRepository.fromJson(repository.toJson()), repository);
   });
 
 
@@ -49,6 +53,13 @@ void main() {
     expect(first, second);
     expect(first.hashCode, second.hashCode);
     expect(first == changed, isFalse);
+    expect(first.lastCodeActivityAt, first.updatedAt);
+    final pushed = GitHubRepository.fromJson({
+      ...json,
+      'pushed_at': '2026-08-31T00:00:00Z',
+    });
+    expect(pushed, isNot(first));
+    expect(pushed.lastCodeActivityAt, DateTime.utc(2026, 8, 31));
   });
 
 }
