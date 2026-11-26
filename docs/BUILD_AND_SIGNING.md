@@ -5,7 +5,7 @@ O novo GitHub Manager possui identidade própria e definitiva.
 ## Identidade Android
 
 - applicationId: `br.com.githubmanager.app`
-- versão atual: `2.0.5+200019`
+- versão atual: `2.0.152+200166`
 - build: Release AOT universal
 
 ## Secrets obrigatórios
@@ -27,3 +27,7 @@ Depois da compilação, o GitHub Actions extrai o certificado do APK e compara c
 ## Regra permanente
 
 Nunca substituir a keystore oficial. Se os Secrets forem apagados do GitHub, recriá-los usando o backup original da mesma keystore.
+
+## Verificação a partir da 2.0.152
+
+Os workflows usam `tool/verify_official_signing.py` antes e depois da compilação. O verificador aceita formatos de saída por esquema e mantém o SHA-256 fixado. Se a keystore realmente divergir, restaure a chave original: não altere o fingerprint nem publique um APK incompatível.

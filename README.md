@@ -1,4 +1,6 @@
-# GitHub Manager 2.0.151
+# GitHub Manager 2.0.152
+
+> Versão 2.0.152+200166: corrige a verificação de assinatura nos workflows, mantendo a publicação oficial em Releases. Consulte docs/RELEASE_2.0.152.md.
 
 > Versão 2.0.151+200165: atualizador próprio e publicação automática do APK oficial em Releases. Consulte docs/RELEASE_2.0.151.md.
 

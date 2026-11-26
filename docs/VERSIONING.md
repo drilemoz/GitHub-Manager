@@ -1,3 +1,7 @@
+# 2.0.152 — Verificação de assinatura oficial
+
+`version: 2.0.152+200166` é a versão canônica. Incremento sobre `2.0.151+200165`. Consulte `docs/RELEASE_2.0.152.md`.
+
 # 2.0.151 — Atualizador próprio
 
 `version: 2.0.151+200165` é a versão canônica. Incremento sobre `2.0.150+200164`. Consulte `docs/RELEASE_2.0.151.md`.

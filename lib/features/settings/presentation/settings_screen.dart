@@ -443,16 +443,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                   children: const [
                     _ChangeNote(
+                      version: '2.0.152',
+                      text: 'Corrige a leitura do certificado oficial nos workflows e valida a chave antes da compilação.',
+                    ),
+                    _ChangeNote(
                       version: '2.0.151',
                       text: 'Atualizador próprio com APK oficial em GitHub Releases, progresso e instalador Android.',
                     ),
                     _ChangeNote(
                       version: '2.0.150',
                       text: 'Verificação local e remota do APK independentes, card compacto e diagnóstico de falhas.',
-                    ),
-                    _ChangeNote(
-                      version: '2.0.149',
-                      text: 'Ordena pelo último push, mantém fixados no topo e atualiza a lista após envios com alterações.',
                     ),
                   ],
                 ),

@@ -38,6 +38,9 @@ jobs:
           cache: true
           pub-cache: true
 
+      - name: Testar verificador de assinatura
+        run: python3 -m unittest discover -s tool -p test_verify_official_signing.py
+
       - name: Restaurar assinatura oficial
         shell: bash
         env:
@@ -58,6 +61,7 @@ jobs:
           keyAlias=$KEY_ALIAS
           storeFile=../upload-keystore.jks
           KEYEOF
+          python3 tool/verify_official_signing.py --keystore android/upload-keystore.jks
 
       - name: Dependências
         # Dependência Google Sign-In introduzida nesta versão. O lockfile
@@ -103,9 +107,7 @@ jobs:
           test -x "$APKANALYZER" || { echo "apkanalyzer não encontrado"; exit 1; }
           test -x "$APKSIGNER" || { echo "apksigner não encontrado"; exit 1; }
           EXPECTED_ID="$(sed -n 's/^applicationId=//p' android/release-signing.properties | head -n1)"
-          EXPECTED_CERT="$(sed -n 's/^certificateSha256=//p' android/release-signing.properties | head -n1 | tr -d ':' | tr '[:upper:]' '[:lower:]')"
           ACTUAL_ID="$("$APKANALYZER" manifest application-id "$APK")"
-          ACTUAL_CERT="$("$APKSIGNER" verify --print-certs "$APK" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n1 | tr -d ':' | tr '[:upper:]' '[:lower:]')"
           VERSION="$(sed -n 's/^version:[[:space:]]*//p' pubspec.yaml | head -n1)"
           test "$("$APKANALYZER" manifest version-code "$APK")" = "${VERSION##*+}"
           test "$("$APKANALYZER" manifest version-name "$APK")" = "${VERSION%%+*}"
@@ -113,12 +115,7 @@ jobs:
             test "$GITHUB_REF_NAME" = "v${VERSION%%+*}"
           fi
           test "$ACTUAL_ID" = "$EXPECTED_ID" || { echo "applicationId incorreto: $ACTUAL_ID"; exit 1; }
-          if [ "$ACTUAL_CERT" != "$EXPECTED_CERT" ]; then
-            echo "Certificado não corresponde à assinatura oficial"
-            echo "SHA-256 esperado: $EXPECTED_CERT"
-            echo "SHA-256 encontrado: $ACTUAL_CERT"
-            exit 1
-          fi
+          python3 tool/verify_official_signing.py --apksigner "$APKSIGNER" --apk "$APK"
 
       - name: Preparar nome oficial do APK
         id: package

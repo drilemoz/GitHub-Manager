@@ -42,6 +42,9 @@ jobs:
           cache: true
           pub-cache: true
 
+      - name: Testar verificador de assinatura
+        run: python3 -m unittest discover -s tool -p test_verify_official_signing.py
+
       - name: Detectar assinatura disponível
         id: signing
         shell: bash
@@ -71,6 +74,7 @@ jobs:
           keyAlias=$KEY_ALIAS
           storeFile=../upload-keystore.jks
           KEYEOF
+            python3 tool/verify_official_signing.py --keystore android/upload-keystore.jks
           fi
 
       - name: Dependências
@@ -136,9 +140,7 @@ jobs:
           if [ "$SIGNING_MODE" = "official" ]; then
             APKSIGNER="$(find "$SDK_ROOT/build-tools" -type f -name apksigner 2>/dev/null | sort -V | tail -n1 || true)"
             test -x "$APKSIGNER"
-            EXPECTED_CERT="$(sed -n 's/^certificateSha256=//p' android/release-signing.properties | head -n1 | tr -d ':' | tr '[:upper:]' '[:lower:]')"
-            ACTUAL_CERT="$("$APKSIGNER" verify --print-certs "$SOURCE" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n1 | tr -d ':' | tr '[:upper:]' '[:lower:]')"
-            test "$ACTUAL_CERT" = "$EXPECTED_CERT" || { echo "Certificado oficial divergente"; exit 1; }
+            python3 tool/verify_official_signing.py --apksigner "$APKSIGNER" --apk "$SOURCE"
           fi
           if [ "$SIGNING_MODE" = "official" ]; then
             FILE="GitHub-Manager-${VERSION_NAME}-${VERSION_CODE}-universal-release.apk"

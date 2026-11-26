@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class UpdateWhatsNewScreen extends StatelessWidget {
-  static const releaseNotesVersion = '2.0.151';
+  static const releaseNotesVersion = '2.0.152';
 
   const UpdateWhatsNewScreen({
     required this.versionLabel,
@@ -70,8 +70,8 @@ class UpdateWhatsNewScreen extends StatelessWidget {
                     const SizedBox(height: 24),
                     const _UpdateItem(
                       icon: Icons.android_rounded,
-                      title: 'Atualização própria',
-                      description: 'Consulta automática ao abrir e manual em Opções, com comparação de versionCode.',
+                      title: 'Correção da assinatura',
+                      description: 'O workflow reconhece diferentes formatos de certificado e verifica a chave antes da compilação.',
                     ),
                     const SizedBox(height: 12),
                     const _UpdateItem(
