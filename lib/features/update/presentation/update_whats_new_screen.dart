@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class UpdateWhatsNewScreen extends StatelessWidget {
-  static const releaseNotesVersion = '2.0.154';
+  static const releaseNotesVersion = '2.0.155';
 
   const UpdateWhatsNewScreen({
     required this.versionLabel,
@@ -69,9 +69,9 @@ class UpdateWhatsNewScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 24),
                     const _UpdateItem(
-                      icon: Icons.visibility_outlined,
-                      title: 'Visibilidade dos repositórios',
-                      description: 'Os cartões mostram Público ou Privado ao lado do tamanho, conforme a visibilidade informada pelo GitHub.',
+                      icon: Icons.check_circle_outline,
+                      title: 'Correção da build Android',
+                      description: 'A validação da versão foi sincronizada com a documentação. Os indicadores Público e Privado continuam disponíveis.',
                     ),
                   ],
                 ),

@@ -1,4 +1,6 @@
-# GitHub Manager 2.0.154
+# GitHub Manager 2.0.155
+
+> Versão 2.0.155+200169: corrige a validação da versão da build #143. Consulte docs/RELEASE_2.0.155.md.
 
 > Versão 2.0.154+200168: visibilidade Pública/Privada junto ao tamanho dos repositórios. Consulte docs/RELEASE_2.0.154.md.
 

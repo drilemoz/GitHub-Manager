@@ -1,3 +1,11 @@
+# 2.0.155 — Correção da build #143
+
+`version: 2.0.155+200169` é a versão canônica. Incremento sobre `2.0.154+200168`. Consulte `docs/RELEASE_2.0.155.md`.
+
+# 2.0.154 — Visibilidade dos repositórios
+
+`version: 2.0.154+200168` foi a versão anterior. Consulte `docs/RELEASE_2.0.154.md`.
+
 # 2.0.153 — Builds e envio direto
 
 `version: 2.0.153+200167` é a versão canônica. Incremento sobre `2.0.152+200166`. Consulte `docs/RELEASE_2.0.153.md`.

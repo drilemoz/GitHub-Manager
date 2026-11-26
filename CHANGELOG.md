@@ -1,3 +1,9 @@
+## 2.0.155+200169 — 2026-11-26
+
+- Corrige a falha `VERSIONING sem a versão canônica` da build Android APK #143.
+- Sincroniza versão, metadados, novidades e documentação; preserva os indicadores de visibilidade, SDK 36, assinatura e Releases.
+- O script de validação de versão do CI foi executado localmente; Flutter analyze/test e compilação ainda dependem de CI.
+
 ## 2.0.154+200168 — 2026-11-26
 
 - Exibe Público ou Privado ao lado do tamanho, usando a visibilidade retornada pelo GitHub.
