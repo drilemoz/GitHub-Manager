@@ -1,6 +1,6 @@
 part of 'repository_detail_screen.dart';
 
-mixin _RepositoryDetailScreenActions on ConsumerState<RepositoryDetailScreen> {
+mixin _RepositoryDetailScreenActions on ConsumerState<RepositoryDetailScreen>, RepositoryProjectSendFlow<RepositoryDetailScreen> {
   late Future<GitHubRepository> _repositoryFuture;
   late Future<List<RepositoryWorkflowRun>> _runsFuture;
   bool _apkShortcutBusy = false;
@@ -309,14 +309,136 @@ mixin _RepositoryDetailScreenActions on ConsumerState<RepositoryDetailScreen> {
     }
   }
 
-  Future<void> _sendBuild(GitHubRepository repository) async {
+  void _downloadProjectZip(
+    GitHubRepository repository,
+    RepositoryProjectInfo info,
+  ) {
+    ref.read(downloadManagerProvider).startRepositoryZip(
+          repositoryFullName: repository.fullName,
+          branch: repository.defaultBranch,
+          projectName: info.projectName,
+          version: info.version,
+        );
+    showCenteredNotice(context, 'Download do projeto iniciado em ZIP.');
+  }
+
+  Future<void> _manageRepository(GitHubRepository repository) async {
+    final favoriteIds = await ref.read(favoriteRepositoryIdsProvider.future);
+    if (!mounted) return;
+    final isFavorite = favoriteIds.contains(repository.id);
+    final action = await showRepositoryActionsSheet(
+      context,
+      repository,
+      isFavorite: isFavorite,
+    );
+    if (action == null || !mounted) return;
+
+    if (action == RepositoryAction.toggleFavorite) {
+      try {
+        await ref.read(repositoryServiceProvider).setRepositoryFavorite(
+              repository,
+              favorite: !isFavorite,
+            );
+        ref.invalidate(favoriteRepositoryIdsProvider);
+        if (mounted) {
+          showCenteredNotice(
+            context,
+            isFavorite
+                ? '${repository.name} não ficará mais fixado no topo.'
+                : '${repository.name} fixado no topo.',
+            kind: CenteredNoticeKind.success,
+          );
+        }
+      } catch (error) {
+        if (mounted) _showError(error);
+      }
+    } else if (action == RepositoryAction.edit) {
+      final result = await showEditRepositoryDialog(context, repository);
+      if (result == null || !mounted) return;
+      try {
+        final updated = await ref.read(repositoryServiceProvider).updateRepository(
+              fullName: repository.fullName,
+              name: result.name,
+              description: result.description,
+              homepage: result.homepage,
+              isPrivate: result.isPrivate,
+              isArchived: result.isArchived,
+            );
+        if (!mounted) return;
+        if (updated.fullName != widget.repositoryFullName) {
+          context.go('/repositories/${updated.fullName}');
+          return;
+        }
+        ref.invalidate(repositoryProjectInfoProvider(updated));
+        showCenteredNotice(
+          context,
+          'Repositório ${updated.name} atualizado com sucesso.',
+          kind: CenteredNoticeKind.success,
+        );
+      } catch (error) {
+        if (mounted) _showError(error);
+      }
+    } else if (action == RepositoryAction.rename) {
+      final newName = await showRenameRepositoryDialog(context, repository);
+      if (newName == null || !mounted) return;
+      try {
+        final renamed = await ref.read(repositoryServiceProvider).renameRepository(
+              fullName: repository.fullName,
+              newName: newName,
+            );
+        ref
+            .read(permissionPreflightServiceProvider)
+            .invalidateRepository(repository.fullName);
+        ref.invalidate(repositoryProjectInfoProvider(repository));
+        ref.invalidate(favoriteRepositoryIdsProvider);
+        if (!mounted) return;
+        showCenteredNotice(
+          context,
+          'Repositório renomeado para ${renamed.name}.',
+          kind: CenteredNoticeKind.success,
+        );
+        context.go('/repositories/${renamed.fullName}');
+      } catch (error) {
+        if (mounted) _showError(error);
+      }
+    } else if (action == RepositoryAction.delete) {
+      final allowed = await ensureRepositoryPermission(
+        context,
+        ref,
+        repositoryFullName: repository.fullName,
+        action: RepositoryCriticalAction.deleteRepository,
+      );
+      if (!allowed || !mounted) return;
+      final confirmed = await showDeleteRepositoryDialog(context, repository);
+      if (confirmed != true || !mounted) return;
+      try {
+        await ref.read(repositoryServiceProvider).deleteRepository(repository.fullName);
+        ref.invalidate(favoriteRepositoryIdsProvider);
+        if (mounted) context.go('/');
+      } catch (error) {
+        if (mounted) _showError(error);
+      }
+    }
+  }
+
+
+}
+
+/// Shared ZIP submission flow for project details and repository builds.
+mixin RepositoryProjectSendFlow<T extends ConsumerStatefulWidget> on ConsumerState<T> {
+  Future<void> sendProject(GitHubRepository repository, {String? initialBranchName}) =>
+      _sendBuild(repository, initialBranchName: initialBranchName);
+
+  Future<void> _sendBuild(GitHubRepository repository, {String? initialBranchName}) async {
     ZipProjectPreview? project;
     var queued = false;
     try {
       project = await ref.read(localProjectServiceProvider).pickAndAnalyzeZip();
       if (project == null || !mounted) return;
 
-      final selectedBranch = await _chooseUploadBranch(repository);
+      final selectedBranch = initialBranchName == null
+          ? await _chooseUploadBranch(repository)
+          : await _chooseUploadBranch(repository, initialBranchName: initialBranchName);
       if (selectedBranch == null || !mounted) return;
       var targetBranch = selectedBranch;
 
@@ -1186,118 +1308,6 @@ mixin _RepositoryDetailScreenActions on ConsumerState<RepositoryDetailScreen> {
         ],
       ),
     );
-  }
-
-  void _downloadProjectZip(
-    GitHubRepository repository,
-    RepositoryProjectInfo info,
-  ) {
-    ref.read(downloadManagerProvider).startRepositoryZip(
-          repositoryFullName: repository.fullName,
-          branch: repository.defaultBranch,
-          projectName: info.projectName,
-          version: info.version,
-        );
-    showCenteredNotice(context, 'Download do projeto iniciado em ZIP.');
-  }
-
-  Future<void> _manageRepository(GitHubRepository repository) async {
-    final favoriteIds = await ref.read(favoriteRepositoryIdsProvider.future);
-    if (!mounted) return;
-    final isFavorite = favoriteIds.contains(repository.id);
-    final action = await showRepositoryActionsSheet(
-      context,
-      repository,
-      isFavorite: isFavorite,
-    );
-    if (action == null || !mounted) return;
-
-    if (action == RepositoryAction.toggleFavorite) {
-      try {
-        await ref.read(repositoryServiceProvider).setRepositoryFavorite(
-              repository,
-              favorite: !isFavorite,
-            );
-        ref.invalidate(favoriteRepositoryIdsProvider);
-        if (mounted) {
-          showCenteredNotice(
-            context,
-            isFavorite
-                ? '${repository.name} não ficará mais fixado no topo.'
-                : '${repository.name} fixado no topo.',
-            kind: CenteredNoticeKind.success,
-          );
-        }
-      } catch (error) {
-        if (mounted) _showError(error);
-      }
-    } else if (action == RepositoryAction.edit) {
-      final result = await showEditRepositoryDialog(context, repository);
-      if (result == null || !mounted) return;
-      try {
-        final updated = await ref.read(repositoryServiceProvider).updateRepository(
-              fullName: repository.fullName,
-              name: result.name,
-              description: result.description,
-              homepage: result.homepage,
-              isPrivate: result.isPrivate,
-              isArchived: result.isArchived,
-            );
-        if (!mounted) return;
-        if (updated.fullName != widget.repositoryFullName) {
-          context.go('/repositories/${updated.fullName}');
-          return;
-        }
-        ref.invalidate(repositoryProjectInfoProvider(updated));
-        showCenteredNotice(
-          context,
-          'Repositório ${updated.name} atualizado com sucesso.',
-          kind: CenteredNoticeKind.success,
-        );
-      } catch (error) {
-        if (mounted) _showError(error);
-      }
-    } else if (action == RepositoryAction.rename) {
-      final newName = await showRenameRepositoryDialog(context, repository);
-      if (newName == null || !mounted) return;
-      try {
-        final renamed = await ref.read(repositoryServiceProvider).renameRepository(
-              fullName: repository.fullName,
-              newName: newName,
-            );
-        ref
-            .read(permissionPreflightServiceProvider)
-            .invalidateRepository(repository.fullName);
-        ref.invalidate(repositoryProjectInfoProvider(repository));
-        ref.invalidate(favoriteRepositoryIdsProvider);
-        if (!mounted) return;
-        showCenteredNotice(
-          context,
-          'Repositório renomeado para ${renamed.name}.',
-          kind: CenteredNoticeKind.success,
-        );
-        context.go('/repositories/${renamed.fullName}');
-      } catch (error) {
-        if (mounted) _showError(error);
-      }
-    } else if (action == RepositoryAction.delete) {
-      final allowed = await ensureRepositoryPermission(
-        context,
-        ref,
-        repositoryFullName: repository.fullName,
-        action: RepositoryCriticalAction.deleteRepository,
-      );
-      if (!allowed || !mounted) return;
-      final confirmed = await showDeleteRepositoryDialog(context, repository);
-      if (confirmed != true || !mounted) return;
-      try {
-        await ref.read(repositoryServiceProvider).deleteRepository(repository.fullName);
-        ref.invalidate(favoriteRepositoryIdsProvider);
-        if (mounted) context.go('/');
-      } catch (error) {
-        if (mounted) _showError(error);
-      }
-    }
   }
 
   void _showError(Object error) {

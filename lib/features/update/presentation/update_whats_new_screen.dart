@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class UpdateWhatsNewScreen extends StatelessWidget {
-  static const releaseNotesVersion = '2.0.152';
+  static const releaseNotesVersion = '2.0.153';
 
   const UpdateWhatsNewScreen({
     required this.versionLabel,
@@ -69,21 +69,21 @@ class UpdateWhatsNewScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 24),
                     const _UpdateItem(
-                      icon: Icons.android_rounded,
-                      title: 'Correção da assinatura',
-                      description: 'O workflow reconhece diferentes formatos de certificado e verifica a chave antes da compilação.',
+                      icon: Icons.play_circle_outline_rounded,
+                      title: 'Builds reorganizadas',
+                      description: 'Branch, execução, envio e atualização reunidos em um painel compacto.',
                     ),
                     const SizedBox(height: 12),
                     const _UpdateItem(
-                      icon: Icons.view_agenda_outlined,
-                      title: 'APK oficial em Releases',
-                      description: 'O workflow publica o APK universal assinado em GitHub Releases, além de Artifacts.',
+                      icon: Icons.cloud_upload_outlined,
+                      title: 'Enviar projeto nas Builds',
+                      description: 'Abra o seletor ZIP e confirme o envio com a branch atual pré-selecionada.',
                     ),
                     const SizedBox(height: 12),
                     const _UpdateItem(
-                      icon: Icons.refresh_rounded,
-                      title: 'Download e instalação',
-                      description: 'Acompanhe o progresso e confirme a atualização no instalador do Android.',
+                      icon: Icons.tune_rounded,
+                      title: 'Mais ações em um menu',
+                      description: 'APKs, diagnóstico, permissões, armazenamento e seleção continuam disponíveis.',
                     ),
                   ],
                 ),

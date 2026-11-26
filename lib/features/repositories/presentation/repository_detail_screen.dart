@@ -63,7 +63,8 @@ class RepositoryDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _RepositoryDetailScreenState extends ConsumerState<RepositoryDetailScreen>
-    with _RepositoryDetailScreenActions, WidgetsBindingObserver {
+    with RepositoryProjectSendFlow<RepositoryDetailScreen>,
+        _RepositoryDetailScreenActions, WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();

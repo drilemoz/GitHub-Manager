@@ -1,3 +1,10 @@
+# GitHub Manager 2.0.153+200167 — Builds (2026-11-26)
+
+- Reorganiza a parte superior das Builds por repositório: branch, executar, enviar, atualizar e menu de ações.
+- Reutiliza o fluxo ZIP existente com a branch atual pré-selecionada, confirmação e verificações preservadas.
+- Mantém filtros, agrupamento por commit e versão, seleção e exclusão, APKs, diagnóstico e permissões.
+- Mantém SDK 36, atualização própria e publicação de APK oficial em Releases. Flutter e APK pendentes de CI.
+
 # GitHub Manager 2.0.152+200166 — Correção da build #140 (2026-11-26)
 
 - Build #140: 323 testes Flutter aprovados; APK de 65,4 MB compilado, mas a validação final informou certificado divergente sem mostrar o SHA-256 encontrado.

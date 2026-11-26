@@ -67,7 +67,7 @@ class _RunGroupCard extends StatelessWidget {
         : '${group.title} $timestamp | Versão $version';
     return Card(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
+        padding: const EdgeInsets.fromLTRB(8, 7, 8, 6),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -80,7 +80,7 @@ class _RunGroupCard extends StatelessWidget {
                     children: [
                       Text(
                         headline,
-                        maxLines: 1,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.w900,
@@ -301,95 +301,111 @@ class _WorkflowStepTile extends StatelessWidget {
   }
 }
 
+enum _BuildMenuAction { artifacts, diagnostics, permissions, storage, select }
+
 class _ActionsQuickBar extends StatelessWidget {
   const _ActionsQuickBar({
+    required this.branch,
     required this.starting,
+    required this.sending,
+    required this.refreshing,
+    required this.onChangeBranch,
     required this.onRun,
+    required this.onSend,
     required this.onRefresh,
     required this.onArtifacts,
     required this.onDiagnostics,
     required this.onPermissions,
+    required this.onStorage,
+    required this.onSelect,
   });
 
-  final bool starting;
-  final VoidCallback onRun;
-  final VoidCallback onRefresh;
-  final VoidCallback onArtifacts;
-  final VoidCallback onDiagnostics;
-  final VoidCallback onPermissions;
+  final String branch;
+  final bool starting, sending, refreshing;
+  final VoidCallback onChangeBranch, onRun, onSend, onRefresh, onArtifacts,
+      onDiagnostics, onPermissions, onStorage, onSelect;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     return Card(
+      margin: EdgeInsets.zero,
+      color: Color.alphaBlend(scheme.primary.withValues(alpha: .045), scheme.surface),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
-        child: Row(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: FilledButton.tonalIcon(
-                onPressed: starting ? null : onRun,
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size(0, 38),
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  visualDensity: VisualDensity.compact,
-                ),
-                icon: starting
-                    ? const SizedBox(
-                        width: 15,
-                        height: 15,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.play_arrow_rounded, size: 19),
-                label: const Text('Executar'),
+            Row(children: [
+              Icon(Icons.inventory_2_outlined, color: scheme.primary, size: 21),
+              const SizedBox(width: 8),
+              Expanded(child: Text('Compilar projeto', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800))),
+            ]),
+            const SizedBox(height: 8),
+            Row(children: [
+              Expanded(child: OutlinedButton(
+                onPressed: onChangeBranch,
+                child: Row(children: [
+                  const Icon(Icons.account_tree_outlined, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(branch, maxLines: 1, overflow: TextOverflow.ellipsis)),
+                  const Icon(Icons.expand_more_rounded, size: 18),
+                ]),
+              )),
+              const SizedBox(width: 4),
+              IconButton(
+                onPressed: refreshing ? null : onRefresh,
+                tooltip: 'Atualizar execuções',
+                icon: refreshing ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.refresh_rounded),
               ),
-            ),
-            const SizedBox(width: 6),
-            _CompactIconAction(
-              icon: Icons.refresh_rounded,
-              tooltip: 'Atualizar',
-              onPressed: onRefresh,
-            ),
-            _CompactIconAction(
-              icon: Icons.android_rounded,
-              tooltip: 'APKs e artifacts',
-              onPressed: onArtifacts,
-            ),
-            _CompactIconAction(
-              icon: Icons.monitor_heart_outlined,
-              tooltip: 'Diagnóstico',
-              onPressed: onDiagnostics,
-            ),
-            _CompactIconAction(
-              icon: Icons.verified_user_outlined,
-              tooltip: 'Permissões',
-              onPressed: onPermissions,
-            ),
+              PopupMenuButton<_BuildMenuAction>(
+                tooltip: 'Mais ações de builds',
+                icon: const Icon(Icons.tune_rounded),
+                onSelected: (action) {
+                  switch (action) {
+                    case _BuildMenuAction.artifacts: onArtifacts(); break;
+                    case _BuildMenuAction.diagnostics: onDiagnostics(); break;
+                    case _BuildMenuAction.permissions: onPermissions(); break;
+                    case _BuildMenuAction.storage: onStorage(); break;
+                    case _BuildMenuAction.select: onSelect(); break;
+                  }
+                },
+                itemBuilder: (_) => const [
+                  PopupMenuItem(value: _BuildMenuAction.artifacts, child: Text('APKs e artifacts')),
+                  PopupMenuItem(value: _BuildMenuAction.diagnostics, child: Text('Diagnóstico')),
+                  PopupMenuItem(value: _BuildMenuAction.permissions, child: Text('Permissões')),
+                  PopupMenuItem(value: _BuildMenuAction.storage, child: Text('Armazenamento')),
+                  PopupMenuItem(value: _BuildMenuAction.select, child: Text('Selecionar execuções')),
+                ],
+              ),
+            ]),
+            const SizedBox(height: 6),
+            LayoutBuilder(builder: (context, constraints) {
+              final runButton = FilledButton.icon(
+                key: const ValueKey('repository-build-run'),
+                onPressed: starting || sending ? null : onRun,
+                icon: starting ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.play_arrow_rounded, size: 20),
+                label: const Text('Executar build', textAlign: TextAlign.center),
+                style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10)),
+              );
+              final sendButton = OutlinedButton.icon(
+                key: const ValueKey('repository-build-send'),
+                onPressed: sending || starting ? null : onSend,
+                icon: sending ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.cloud_upload_outlined, size: 20),
+                label: const Text('Enviar projeto', textAlign: TextAlign.center),
+                style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10)),
+              );
+              if (constraints.maxWidth < 310 || MediaQuery.textScalerOf(context).scale(14) > 18) {
+                return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [runButton, const SizedBox(height: 4), sendButton]);
+              }
+              return Row(children: [Expanded(child: runButton), const SizedBox(width: 8), Expanded(child: sendButton)]);
+            }),
           ],
         ),
       ),
     );
   }
-}
-
-class _CompactIconAction extends StatelessWidget {
-  const _CompactIconAction({
-    required this.icon,
-    required this.tooltip,
-    required this.onPressed,
-  });
-
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) => IconButton(
-        onPressed: onPressed,
-        tooltip: tooltip,
-        visualDensity: VisualDensity.compact,
-        constraints: const BoxConstraints.tightFor(width: 38, height: 38),
-        icon: Icon(icon, size: 18),
-      );
 }
 
 class _WorkflowsPanel extends StatelessWidget {
@@ -405,10 +421,9 @@ class _WorkflowsPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
-        child: Column(
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+      child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
@@ -434,7 +449,7 @@ class _WorkflowsPanel extends StatelessWidget {
                 children: [
                   _WorkflowChip(
                     selected: selectedWorkflow == null,
-                    icon: Icons.all_inclusive_rounded,
+                    icon: Icons.check_rounded,
                     label: 'Todos',
                     count: data.allRuns.length,
                     onTap: () => onSelected(null),
@@ -471,7 +486,6 @@ class _WorkflowsPanel extends StatelessWidget {
               }),
             ],
           ],
-        ),
       ),
     );
   }
@@ -495,8 +509,9 @@ class _WorkflowChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ChoiceChip(
         selected: selected,
+        showCheckmark: false,
         onSelected: (_) => onTap(),
-        avatar: Icon(icon, size: 16),
+        avatar: Icon(selected ? Icons.check_rounded : icon, size: 16),
         label: Text('$label · $count'),
         labelStyle: const TextStyle(fontWeight: FontWeight.w700),
         visualDensity: VisualDensity.compact,

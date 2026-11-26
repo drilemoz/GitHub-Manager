@@ -1,4 +1,6 @@
-# GitHub Manager 2.0.152
+# GitHub Manager 2.0.153
+
+> Versão 2.0.153+200167: Builds com painel compacto, envio de ZIP direto e menu de ações. Consulte docs/RELEASE_2.0.153.md.
 
 > Versão 2.0.152+200166: corrige a verificação de assinatura nos workflows, mantendo a publicação oficial em Releases. Consulte docs/RELEASE_2.0.152.md.
 

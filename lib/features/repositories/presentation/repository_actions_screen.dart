@@ -18,6 +18,7 @@ import 'package:github_manager/features/downloads/presentation/download_center_b
 import 'package:github_manager/features/downloads/presentation/download_providers.dart';
 import 'package:github_manager/features/repositories/domain/repository_git_models.dart';
 import 'package:github_manager/features/repositories/presentation/repository_branch_selector.dart';
+import 'package:github_manager/features/repositories/presentation/repository_detail_screen.dart' show RepositoryProjectSendFlow;
 import 'package:github_manager/features/repositories/presentation/repository_providers.dart';
 import 'package:github_manager/features/uploads/presentation/upload_center_button.dart';
 import 'package:go_router/go_router.dart';
@@ -48,7 +49,28 @@ class RepositoryActionsScreen extends ConsumerStatefulWidget {
 }
 
 class _RepositoryActionsScreenState extends ConsumerState<RepositoryActionsScreen>
-    with WidgetsBindingObserver, _RepositoryActionsStateController {
+    with WidgetsBindingObserver, RepositoryProjectSendFlow<RepositoryActionsScreen>,
+        _RepositoryActionsStateController {
+  bool _sendingProject = false;
+
+  Future<void> _sendFromBuilds() async {
+    if (widget.readOnly || _sendingProject) return;
+    final target = widget.repositoryFullName;
+    final branch = _branch;
+    setState(() => _sendingProject = true);
+    try {
+      final service = ref.read(repositoryServiceProvider);
+      final repository = await service.getRepository(target).timeout(const Duration(seconds: 12));
+      if (!mounted || widget.readOnly || widget.repositoryFullName != target) return;
+      await sendProject(repository, initialBranchName: branch);
+      if (mounted) await _refresh(silent: true);
+    } catch (error) {
+      if (mounted) _showError(error);
+    } finally {
+      if (mounted) setState(() => _sendingProject = false);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -85,7 +107,7 @@ class _RepositoryActionsScreenState extends ConsumerState<RepositoryActionsScree
         ? 'Builds'
         : 'Execuções — ${_selectedWorkflow!.name}';
     return Scaffold(
-      bottomNavigationBar: const AppMainNavigation(selectedIndex: 0),
+      bottomNavigationBar: const AppMainNavigation(selectedIndex: 1),
       appBar: AppBar(
         leading: _selectionMode
             ? IconButton(
@@ -136,19 +158,6 @@ class _RepositoryActionsScreenState extends ConsumerState<RepositoryActionsScree
                   : const Icon(Icons.delete_forever_outlined),
             ),
           ] else ...[
-            if (!widget.readOnly)
-              IconButton(
-                onPressed: () => context.push('/builds/storage?repository=${Uri.encodeQueryComponent(widget.repositoryFullName)}'),
-                tooltip: 'Gerenciar armazenamento de artifacts',
-                icon: const Icon(Icons.inventory_2_outlined, size: 21),
-              ),
-            if (!widget.readOnly)
-              IconButton(
-                onPressed: () => setState(() => _selectionMode = true),
-                tooltip: 'Selecionar execuções',
-                visualDensity: VisualDensity.compact,
-                icon: const Icon(Icons.checklist_rounded, size: 21),
-              ),
             const UploadCenterButton(),
             const DownloadCenterButton(),
           ],
@@ -193,8 +202,13 @@ class _RepositoryActionsScreenState extends ConsumerState<RepositoryActionsScree
               children: [
                 if (!widget.readOnly && !_selectionMode) ...[
                   _ActionsQuickBar(
+                    branch: _branch,
                     starting: _starting,
+                    sending: _sendingProject,
+                    refreshing: _refreshing,
+                    onChangeBranch: _changeBranch,
                     onRun: _runWorkflow,
+                    onSend: _sendFromBuilds,
                     onRefresh: () => _refresh(),
                     onArtifacts: () => context.push(
                       '/repositories/${widget.repositoryFullName}/artifacts?readOnly=${widget.readOnly ? '1' : '0'}',
@@ -203,20 +217,14 @@ class _RepositoryActionsScreenState extends ConsumerState<RepositoryActionsScree
                     onPermissions: () => context.push(
                       '/repositories/${widget.repositoryFullName}/permissions',
                     ),
+                    onStorage: () => context.push('/builds/storage?repository=${Uri.encodeQueryComponent(widget.repositoryFullName)}'),
+                    onSelect: () => setState(() => _selectionMode = true),
                   ),
-                  const SizedBox(height: 7),
+                  const SizedBox(height: 12),
+                ] else if (!_selectionMode) ...[
+                  RepositoryBranchButton(branch: _branch, onPressed: _changeBranch, compact: true),
+                  const SizedBox(height: 8),
                 ],
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 7),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: RepositoryBranchButton(
-                      branch: _branch,
-                      onPressed: _changeBranch,
-                      compact: true,
-                    ),
-                  ),
-                ),
                 _WorkflowsPanel(
                   data: data,
                   selectedWorkflow: _selectedWorkflow,
@@ -233,7 +241,7 @@ class _RepositoryActionsScreenState extends ConsumerState<RepositoryActionsScree
                     Expanded(
                       child: Text(
                         data.selectedWorkflow == null
-                            ? 'Todas as execuções'
+                            ? 'Execuções recentes'
                             : 'Execuções — ${data.selectedWorkflow!.name}',
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w800,
